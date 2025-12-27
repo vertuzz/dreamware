@@ -62,13 +62,21 @@
 - **Pinterest-Style Grid:** Masonry layout. Minimal text. Hover to see title and "Vibe Check" score.
 - **Filters:**
   - **By Tool:** "Show me apps built with Replit."
+  - **By Tag:** Discover by aesthetics or use case (e.g., `#Cyberpunk`, `#SaaS`).
   - **By Status:** "Show me ideas that need a builder."
+  - **Sort by Popularity:** Views, Likes, or "Vibe Check" score.
 
 ### 5.3. Interaction & Collaboration
-- **"Vibe Check" (Rating):** Instead of distinct upvotes, a "Vibe" slider (0-100%) or simple Fire/Ice emoji reaction. This allows users to evaluate the "vibe quality" on a quantitative scale.
-- **Comments & Remix Linking:** Users can post comments on a Vibe. Comments can include text and links to their own implementations (remixes) of the app. The OP can "Pin" the best implementation as the "Official Live Version."
-- **"Fork This Vibe" (Copy Prompt):** One-click button to copy the System Prompt to clipboard.
+- **"Vibe Check" (Rating):** High-fidelity quantitative feedback (0-100%).
+- **Likes & Social Proof:** Quick "Like" (Heart) for feed ranking.
+- **Followers:** Follow creators to build a personal "Dreamware" feed.
+- **Collections:** Users can organize Vibes into public/private folders (e.g., "AI Side Projects").
+- **Comments & Remix Linking:** Users can post comments on a Vibe. Comments can include text and links to their own implementations.
+- **"Fork This Vibe" (Copy Prompt):** One-click button to copy the System Prompt. This creates a "Lineage" link in the database.
 - **"Claim Project":** A user can click "I'm building this." This links their profile to the post as a "Collaborator."
+
+### 5.4. Engagement
+- **Notifications:** Real-time (or near real-time) alerts when someone Likes, Comments, or Forks your Vibe.
 
 ---
 
@@ -84,20 +92,22 @@
 7. **User A** marks the Vercel link as the "Official Implementation."
 
 ### 6.2. Data Model (Schema)
-- **Users:** `id`, `username`, `email`, `avatar`, `portfolio_links`, `reputation_score`, `google_id`, `github_id`, `hashed_password`
-- **Tools:** `id`, `name` (e.g., Cursor, Replit, v0)
+- **Users:** `id`, `username`, `email`, `avatar`, `reputation_score`, `auth_fields`
+- **Tools:** `id`, `name`
+- **Tags:** `id`, `name` (Aesthetic or category tags)
 - **VibeImages:** `id`, `vibe_id`, `image_url`
 - **Vibes (Posts):**
   - `id`, `creator_id`
-  - `images` (One or more visual hooks)
-  - `prompt_text` (The primary system prompt)
-  - `prd_text` (Optional PRD specification)
-  - `extra_specs` (Optional technical requirements or constraints)
+  - `parent_vibe_id` (Link to the original "forked" Vibe)
+  - `prompt_text`, `prd_text`, `extra_specs`
   - `status` (Concept, WIP, Live)
-  - `implementations` (Array of links to live versions)
-  - `tools` (Normalized relationship to Tools used)
-- **Reviews (Vibe Checks):** `id`, `vibe_id`, `user_id`, `score` (0-100), `comment`, `created_at`
-- **Comments:** `id`, `vibe_id`, `user_id`, `content`, `created_at`
+  - `tools` (Many-to-Many), `tags` (Many-to-Many)
+- **Reviews (Vibe Checks):** `id`, `vibe_id`, `user_id`, `score`, `comment`
+- **Comments:** `id`, `vibe_id`, `user_id`, `content`
+- **Likes:** `id`, `vibe_id`, `user_id`
+- **Collections:** `id`, `owner_id`, `name`, `vibes` (Many-to-Many)
+- **Followers:** `follower_id`, `followed_id`
+- **Notifications:** `id`, `user_id`, `type`, `content`, `link`, `is_read`
 
 ---
 
