@@ -9,6 +9,7 @@ The backend for VibeHub, a visual-first aggregation platform for AI-generated so
 - **Database**: PostgreSQL
 - **Migrations**: Alembic
 - **Security**: [JWT](https://pyjwt.readthedocs.io/) (via `python-jose`) & `bcrypt`
+- **Media**: [Cloudinary](https://cloudinary.com/) for image storage and transformations
 - **Package Manager**: [uv](https://github.com/astral-sh/uv)
 - **Containerization**: Docker Compose (for local DB)
 - **Testing**: `pytest`
@@ -16,6 +17,7 @@ The backend for VibeHub, a visual-first aggregation platform for AI-generated so
 ## Core Features
 - **Auth**: Secure JWT-based authentication (Stable User IDs).
 - **Vibes**: Full lifecycle of AI app concepts (Create, Feed, Fork, Status).
+- **Media**: Integrated Cloudinary support for image uploads and management.
 - **Social**: Comments, Vibe Checks (0-100% reviews), and Likes.
 - **Collaboration**: Implementation submissions and Official status linking.
 - **Social Graph**: User following and real-time-like notifications.
@@ -44,6 +46,11 @@ The project uses `.env` files for configuration. Create a `backend/.env` file:
 DATABASE_URL=postgresql://user:password@localhost:5432/vibehub
 TEST_DATABASE_URL=postgresql://user:password@localhost:5432/vibehub_test
 SECRET_KEY=your_secret_key_here
+
+# Cloudinary
+CLOUDINARY_CLOUD_NAME=your_cloud_name
+CLOUDINARY_API_KEY=your_api_key
+CLOUDINARY_API_SECRET=your_api_secret
 ```
 
 ### 5. Database Initialization
@@ -70,8 +77,8 @@ uv run pytest
 
 ## Project Structure
 - `app/`: Main application code.
-  - `core/`: Security and JWT configuration.
-  - `routers/`: 12 domain-specific API routers.
+  - `core/`: Security, JWT, and centralized configuration (`config.py`).
+  - `routers/`: 13 domain-specific API routers (including `media.py`).
   - `schemas/`: Pydantic models for request/response validation.
   - `models.py`: SQLAlchemy database models.
   - `main.py`: App entry point and router registration.
