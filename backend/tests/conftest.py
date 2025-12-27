@@ -24,7 +24,8 @@ def engine():
         poolclass=StaticPool,
     )
     Base.metadata.create_all(bind=engine)
-    return engine
+    yield engine
+    engine.dispose()
 
 @pytest.fixture(scope="function")
 def db_session(engine):
