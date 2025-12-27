@@ -1,6 +1,7 @@
+import enum
 from datetime import datetime
 from typing import List, Optional
-from sqlalchemy import JSON, ForeignKey, Float, Table, Text, DateTime, func, String, Column
+from sqlalchemy import JSON, ForeignKey, Float, Table, Text, DateTime, func, String, Column, Enum, Boolean, UniqueConstraint
 from sqlalchemy.orm import relationship, DeclarativeBase, Mapped, mapped_column
 
 class Base(DeclarativeBase):
@@ -28,11 +29,22 @@ collection_vibes = Table(
     Column("vibe_id", ForeignKey("vibes.id"), primary_key=True),
 )
 
+class VibeStatus(str, enum.Enum):
+    CONCEPT = "Concept"
+    WIP = "WIP"
+    LIVE = "Live"
+
+class NotificationType(str, enum.Enum):
+    LIKE = "like"
+    COMMENT = "comment"
+    FORK = "fork"
+    IMPLEMENTATION = "implementation"
+
 class Follow(Base):
     __tablename__ = "follows"
     follower_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
     followed_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
 
 class User(Base):
     __tablename__ = "users"
@@ -41,8 +53,7 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     email: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     avatar: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    portfolio_links: Mapped[list] = mapped_column(JSON, default=list)
-    reputation_score: Mapped[float] = mapped_column(Float, default=0.0)
+    reputation_score: Mapped[float] = mapped_column(Float, default=0.0, index=True)
     
     # Auth fields
     hashed_password: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -53,7 +64,10 @@ class User(Base):
     comments: Mapped[List["Comment"]] = relationship("Comment", back_populates="user", cascade="all, delete-orphan")
     reviews: Mapped[List["Review"]] = relationship("Review", back_populates="user", cascade="all, delete-orphan")
     likes: Mapped[List["Like"]] = relationship("Like", back_populates="user", cascade="all, delete-orphan")
+    comment_likes: Mapped[List["CommentLike"]] = relationship("CommentLike", back_populates="user", cascade="all, delete-orphan")
     collections: Mapped[List["Collection"]] = relationship("Collection", back_populates="owner", cascade="all, delete-orphan")
+    implementations: Mapped[List["Implementation"]] = relationship("Implementation", back_populates="user", cascade="all, delete-orphan")
+    links: Mapped[List["UserLink"]] = relationship("UserLink", back_populates="user", cascade="all, delete-orphan")
     
     # Self-referential for followers
     followers: Mapped[List["User"]] = relationship(
@@ -72,6 +86,15 @@ class User(Base):
     )
 
     notifications: Mapped[List["Notification"]] = relationship("Notification", back_populates="user", cascade="all, delete-orphan")
+
+class UserLink(Base):
+    __tablename__ = "user_links"
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    label: Mapped[str] = mapped_column(String(50)) # e.g., 'GitHub', 'Twitter', 'Portfolio'
+    url: Mapped[str] = mapped_column(String(512))
+
+    user: Mapped["User"] = relationship("User", back_populates="links")
 
 class Tool(Base):
     __tablename__ = "tools"
@@ -92,7 +115,7 @@ class VibeImage(Base):
     __tablename__ = "vibe_images"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    vibe_id: Mapped[int] = mapped_column(ForeignKey("vibes.id"))
+    vibe_id: Mapped[int] = mapped_column(ForeignKey("vibes.id"), index=True)
     image_url: Mapped[str] = mapped_column(String(512))
     
     vibe: Mapped["Vibe"] = relationship("Vibe", back_populates="images")
@@ -101,18 +124,18 @@ class Vibe(Base):
     __tablename__ = "vibes"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     
     # Core content
-    prompt_text: Mapped[str] = mapped_column(Text)
+    prompt_text: Mapped[str] = mapped_column(Text, nullable=False)
     prd_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     extra_specs: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     
     # Lineage
-    parent_vibe_id: Mapped[Optional[int]] = mapped_column(ForeignKey("vibes.id"), nullable=True)
+    parent_vibe_id: Mapped[Optional[int]] = mapped_column(ForeignKey("vibes.id"), nullable=True, index=True)
     
-    status: Mapped[str] = mapped_column(String(20), default="Concept")
-    implementations: Mapped[list] = mapped_column(JSON, default=list)
+    status: Mapped[VibeStatus] = mapped_column(Enum(VibeStatus), default=VibeStatus.CONCEPT, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     # Relationships
     creator: Mapped["User"] = relationship("User", back_populates="vibes")
@@ -122,31 +145,50 @@ class Vibe(Base):
     comments: Mapped[List["Comment"]] = relationship("Comment", back_populates="vibe", cascade="all, delete-orphan")
     reviews: Mapped[List["Review"]] = relationship("Review", back_populates="vibe", cascade="all, delete-orphan")
     likes: Mapped[List["Like"]] = relationship("Like", back_populates="vibe", cascade="all, delete-orphan")
+    implementations: Mapped[List["Implementation"]] = relationship("Implementation", back_populates="vibe", cascade="all, delete-orphan")
     
     parent: Mapped[Optional["Vibe"]] = relationship("Vibe", remote_side=[id], back_populates="forks")
     forks: Mapped[List["Vibe"]] = relationship("Vibe", back_populates="parent")
+
+class Implementation(Base):
+    __tablename__ = "implementations"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    vibe_id: Mapped[int] = mapped_column(ForeignKey("vibes.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    url: Mapped[str] = mapped_column(String(512), nullable=False)
+    description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    is_official: Mapped[bool] = mapped_column(Boolean, default=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    vibe: Mapped["Vibe"] = relationship("Vibe", back_populates="implementations")
+    user: Mapped["User"] = relationship("User", back_populates="implementations")
 
 class Comment(Base):
     __tablename__ = "comments"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    vibe_id: Mapped[int] = mapped_column(ForeignKey("vibes.id"))
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    vibe_id: Mapped[int] = mapped_column(ForeignKey("vibes.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     content: Mapped[str] = mapped_column(Text)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+    
+    # Counter cache for performance
+    likes_count: Mapped[int] = mapped_column(default=0)
 
     vibe: Mapped["Vibe"] = relationship("Vibe", back_populates="comments")
     user: Mapped["User"] = relationship("User", back_populates="comments")
+    likes: Mapped[List["CommentLike"]] = relationship("CommentLike", back_populates="comment", cascade="all, delete-orphan")
 
 class Review(Base):
     __tablename__ = "reviews"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    vibe_id: Mapped[int] = mapped_column(ForeignKey("vibes.id"))
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
+    vibe_id: Mapped[int] = mapped_column(ForeignKey("vibes.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     score: Mapped[float] = mapped_column(Float)
     comment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     vibe: Mapped["Vibe"] = relationship("Vibe", back_populates="reviews")
     user: Mapped["User"] = relationship("User", back_populates="reviews")
@@ -154,21 +196,37 @@ class Review(Base):
 class Like(Base):
     __tablename__ = "likes"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    vibe_id: Mapped[int] = mapped_column(ForeignKey("vibes.id"))
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    vibe_id: Mapped[int] = mapped_column(ForeignKey("vibes.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     vibe: Mapped["Vibe"] = relationship("Vibe", back_populates="likes")
     user: Mapped["User"] = relationship("User", back_populates="likes")
+
+    # Ensure a user can only like a vibe once
+    __table_args__ = (UniqueConstraint("vibe_id", "user_id", name="uq_vibe_like"),)
+
+class CommentLike(Base):
+    __tablename__ = "comment_likes"
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    comment_id: Mapped[int] = mapped_column(ForeignKey("comments.id"), index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    comment: Mapped["Comment"] = relationship("Comment", back_populates="likes")
+    user: Mapped["User"] = relationship("User", back_populates="comment_likes")
+
+    # Ensure a user can only like a comment once
+    __table_args__ = (UniqueConstraint("comment_id", "user_id", name="uq_comment_like"),)
 
 class Collection(Base):
     __tablename__ = "collections"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     name: Mapped[str] = mapped_column(String(100))
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
-    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    is_public: Mapped[bool] = mapped_column(default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    is_public: Mapped[bool] = mapped_column(default=True, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     owner: Mapped["User"] = relationship("User", back_populates="collections")
     vibes: Mapped[List["Vibe"]] = relationship("Vibe", secondary=collection_vibes)
@@ -176,11 +234,11 @@ class Collection(Base):
 class Notification(Base):
     __tablename__ = "notifications"
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
-    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
-    type: Mapped[str] = mapped_column(String(50)) # e.g., 'like', 'comment', 'fork'
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    type: Mapped[NotificationType] = mapped_column(Enum(NotificationType))
     content: Mapped[str] = mapped_column(Text)
     link: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
-    is_read: Mapped[bool] = mapped_column(default=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    is_read: Mapped[bool] = mapped_column(default=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     user: Mapped["User"] = relationship("User", back_populates="notifications")
