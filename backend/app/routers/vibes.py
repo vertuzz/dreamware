@@ -16,6 +16,9 @@ def get_vibes(
     limit: int = 20,
     tool_id: Optional[int] = None,
     tag_id: Optional[int] = None,
+    tool: Optional[str] = None,
+    tag: Optional[str] = None,
+    search: Optional[str] = None,
     status: Optional[VibeStatus] = None,
     sort_by: str = Query("created_at", enum=["created_at", "score", "likes"]),
     db: Session = Depends(get_db)
@@ -24,10 +27,32 @@ def get_vibes(
     
     if tool_id:
         query = query.join(Vibe.tools).filter(Tool.id == tool_id)
+    elif tool:
+        tool_names = [t.strip() for t in tool.split(",") if t.strip()]
+        if len(tool_names) > 1:
+            query = query.join(Vibe.tools).filter(Tool.name.in_(tool_names))
+        else:
+            query = query.join(Vibe.tools).filter(Tool.name.ilike(f"%{tool_names[0]}%"))
+        
     if tag_id:
         query = query.join(Vibe.tags).filter(Tag.id == tag_id)
+    elif tag:
+        tag_names = [t.strip() for t in tag.split(",") if t.strip()]
+        if len(tag_names) > 1:
+            query = query.join(Vibe.tags).filter(Tag.name.in_(tag_names))
+        else:
+            query = query.join(Vibe.tags).filter(Tag.name.ilike(f"%{tag_names[0]}%"))
+        
+    if search:
+        query = query.filter(
+            (Vibe.prompt_text.ilike(f"%{search}%")) | 
+            (Vibe.prd_text.ilike(f"%{search}%"))
+        )
+        
     if status:
         query = query.filter(Vibe.status == status)
+    
+    query = query.distinct()
     
     if sort_by == "created_at":
         query = query.order_by(desc(Vibe.created_at))
