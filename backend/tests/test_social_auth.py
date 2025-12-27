@@ -29,8 +29,8 @@ async def test_google_login_new_user(client: AsyncClient):
         "name": "Google User"
     }
 
-    with patch("httpx.AsyncClient.post", return_value=mock_token_response), \
-         patch("httpx.AsyncClient.get", return_value=mock_user_info_response):
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_token_response), \
+         patch("httpx.AsyncClient.get", new_callable=AsyncMock, return_value=mock_user_info_response):
         
         response = await client.post("/auth/google", json={"code": "some-google-code"})
         
@@ -56,8 +56,8 @@ async def test_github_login_new_user(client: AsyncClient):
         "email": "github@example.com"
     }
 
-    with patch("httpx.AsyncClient.post", return_value=mock_token_response), \
-         patch("httpx.AsyncClient.get", return_value=mock_user_info_response):
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_token_response), \
+         patch("httpx.AsyncClient.get", new_callable=AsyncMock, return_value=mock_user_info_response):
         
         response = await client.post("/auth/github", json={"code": "some-github-code"})
         
@@ -69,7 +69,7 @@ async def test_github_login_new_user(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_google_login_existing_user_by_email(client: AsyncClient):
     # Register user first
-    client.post("/auth/register", json= await{
+    await client.post("/auth/register", json={
         "username": "existinguser",
         "email": "google@example.com",
         "password": "password123"
@@ -90,8 +90,8 @@ async def test_google_login_existing_user_by_email(client: AsyncClient):
         "name": "Google User"
     }
 
-    with patch("httpx.AsyncClient.post", return_value=mock_token_response), \
-         patch("httpx.AsyncClient.get", return_value=mock_user_info_response):
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_token_response), \
+         patch("httpx.AsyncClient.get", new_callable=AsyncMock, return_value=mock_user_info_response):
         
         response = await client.post("/auth/google", json={"code": "some-google-code"})
         
@@ -122,7 +122,7 @@ async def test_github_login_private_email(client: AsyncClient):
         {"email": "private@example.com", "primary": True, "verified": True}
     ]
 
-    with patch("httpx.AsyncClient.post", return_value=mock_token_response), \
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_token_response), \
          patch("httpx.AsyncClient.get") as mock_get:
         
         mock_get.side_effect = [mock_user_info_response, mock_emails_response]
@@ -145,7 +145,7 @@ async def test_google_login_exchange_fail(client: AsyncClient):
     mock_token_response.status_code = 400
     mock_token_response.text = "invalid code"
     
-    with patch("httpx.AsyncClient.post", return_value=mock_token_response):
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_token_response):
         response = await client.post("/auth/google", json={"code": "bad-code"})
         assert response.status_code == 400
         assert "Failed to exchange Google code" in response.json()["detail"]
@@ -171,7 +171,7 @@ async def test_github_login_no_email_fail(client: AsyncClient):
     mock_emails_response = MagicMock()
     mock_emails_response.status_code = 400
 
-    with patch("httpx.AsyncClient.post", return_value=mock_token_response), \
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_token_response), \
          patch("httpx.AsyncClient.get") as mock_get:
         
         mock_get.side_effect = [mock_user_info_response, mock_emails_response]
@@ -184,7 +184,7 @@ async def test_github_login_no_email_fail(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_google_login_username_collision(client: AsyncClient):
     # Register user with the same base username
-    client.post("/auth/register", json= await{
+    await client.post("/auth/register", json={
         "username": "googleuser",
         "email": "other@example.com",
         "password": "password123"
@@ -205,8 +205,8 @@ async def test_google_login_username_collision(client: AsyncClient):
         "name": "Google User"
     }
 
-    with patch("httpx.AsyncClient.post", return_value=mock_token_response), \
-         patch("httpx.AsyncClient.get", return_value=mock_user_info_response):
+    with patch("httpx.AsyncClient.post", new_callable=AsyncMock, return_value=mock_token_response), \
+         patch("httpx.AsyncClient.get", new_callable=AsyncMock, return_value=mock_user_info_response):
         
         response = await client.post("/auth/google", json={"code": "some-google-code"})
         

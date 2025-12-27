@@ -4,9 +4,9 @@ from httpx import AsyncClient
 @pytest.mark.asyncio
 async def test_vibe_search_by_tag_name(client: AsyncClient, auth_headers: dict):
     # 1. Create tools and tags
-    client.post("/tools/", json= await{"name": "Replit"})
-    client.post("/tags/", json= await{"name": "Cyberpunk"})
-    client.post("/tags/", json= await{"name": "Minimalist"})
+    await client.post("/tools/", json={"name": "Replit"})
+    await client.post("/tags/", json={"name": "Cyberpunk"})
+    await client.post("/tags/", json={"name": "Minimalist"})
     
     # 2. Get IDs for some
     tag_resp = await client.get("/tags/")
@@ -24,13 +24,13 @@ async def test_vibe_search_by_tag_name(client: AsyncClient, auth_headers: dict):
         "tool_ids": [replit_id],
         "tag_ids": [cyberpunk_id]
     }
-    client.post("/vibes/", json= awaitvibe1_data, headers=auth_headers)
+    await client.post("/vibes/", json=vibe1_data, headers=auth_headers)
     
     vibe2_data = {
         "prompt_text": "Minimalist music player",
         "tag_ids": [minimalist_id]
     }
-    client.post("/vibes/", json= awaitvibe2_data, headers=auth_headers)
+    await client.post("/vibes/", json=vibe2_data, headers=auth_headers)
     
     # 4. Search by tag name
     resp = await client.get("/vibes/?tag=Cyberpunk")
@@ -59,7 +59,7 @@ async def test_vibe_search_by_tag_name(client: AsyncClient, auth_headers: dict):
     assert len(resp.json()) == 1
     
     # Multiple tools
-    client.post("/tools/", json= await{"name": "Cursor"})
+    await client.post("/tools/", json={"name": "Cursor"})
     resp = await client.get("/vibes/?tool=Replit,Cursor")
     assert len(resp.json()) == 1 # still 1 because only vibe1 has Replit and none have Cursor yet
     

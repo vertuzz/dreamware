@@ -39,7 +39,7 @@ async def test_vibes_filtering_and_errors(client: AsyncClient, auth_headers: dic
 
     # 6. Error: Update others' vibe
     # Register another user to own a vibe
-    client.post("/auth/register", json= await{"username": "other", "email": "other@v.com", "password": "p"})
+    await client.post("/auth/register", json={"username": "other", "email": "other@v.com", "password": "p"})
     # Login as other to create a vibe
     login_resp = await client.post("/auth/login", data={"username": "other", "password": "p"})
     other_headers = {"Authorization": f"Bearer {login_resp.json()['access_token']}"}
@@ -79,7 +79,7 @@ async def test_likes_errors_and_unlikes(client: AsyncClient, auth_headers: dict)
     vibe_id = vibe["id"]
 
     # 1. Like vibe
-    client.post(f"/vibes/{vibe_id}/like", headers= awaitauth_headers)
+    await client.post(f"/vibes/{vibe_id}/like", headers=auth_headers)
     
     # 2. Duplicate like (400)
     resp = await client.post(f"/vibes/{vibe_id}/like", headers=auth_headers)
@@ -106,15 +106,15 @@ async def test_likes_errors_and_unlikes(client: AsyncClient, auth_headers: dict)
     assert resp.status_code == 400
 
     # 7. Vibe not found for like
-    assert client.post("/vibes/9999/like", headers= awaitauth_headers).status_code == 404
+    assert (await client.post("/vibes/9999/like", headers=auth_headers)).status_code == 404
 
     # 8. Comment not found for like
-    assert client.post("/comments/9999/like", headers= awaitauth_headers).status_code == 404
+    assert (await client.post("/comments/9999/like", headers=auth_headers)).status_code == 404
 
 @pytest.mark.asyncio
 async def test_notifications_read(client: AsyncClient, auth_headers: dict):
     # 1. Register a victim (the one who will receive the notification)
-    client.post("/auth/register", json= await{"username": "victim_n", "email": "vn@v.com", "password": "p"})
+    await client.post("/auth/register", json={"username": "victim_n", "email": "vn@v.com", "password": "p"})
     login_resp = await client.post("/auth/login", data={"username": "victim_n", "password": "p"})
     victim_headers = {"Authorization": f"Bearer {login_resp.json()['access_token']}"}
     
@@ -123,7 +123,7 @@ async def test_notifications_read(client: AsyncClient, auth_headers: dict):
     vibe = vibe_resp.json()
 
     # 2. Origin user (auth_headers) likes victim's vibe
-    client.post(f"/vibes/{vibe['id']}/like", headers= awaitauth_headers)
+    await client.post(f"/vibes/{vibe['id']}/like", headers=auth_headers)
 
     # 3. Check notification for victim
     n_resp = await client.get("/notifications/", headers=victim_headers)
@@ -150,17 +150,17 @@ async def test_reviews_and_comments_errors(client: AsyncClient, auth_headers: di
     vibe_id = vibe["id"]
 
     # 1. Comment not found
-    assert client.patch("/comments/9999", json= await{"content": "x"}, headers=auth_headers).status_code == 404
-    assert client.delete("/comments/9999", headers= awaitauth_headers).status_code == 404
+    assert (await client.patch("/comments/9999", json={"content": "x"}, headers=auth_headers)).status_code == 404
+    assert (await client.delete("/comments/9999", headers=auth_headers)).status_code == 404
 
     # 2. Unauthorized comment edit
-    client.post("/auth/register", json= await{"username": "comm_owner", "email": "co@v.com", "password": "p"})
+    await client.post("/auth/register", json={"username": "comm_owner", "email": "co@v.com", "password": "p"})
     login_resp = await client.post("/auth/login", data={"username": "comm_owner", "password": "p"})
     co_headers = {"Authorization": f"Bearer {login_resp.json()['access_token']}"}
     comm_resp = await client.post(f"/vibes/{vibe_id}/comments", json={"content": "Mine"}, headers=co_headers)
     comm = comm_resp.json()
 
-    assert client.patch(f"/comments/{comm['id']}", json= await{"content": "hacked"}, headers=auth_headers).status_code == 403
+    assert (await client.patch(f"/comments/{comm['id']}", json={"content": "hacked"}, headers=auth_headers)).status_code == 403
 
     # 3. Success: Update own comment
     resp = await client.patch(f"/comments/{comm['id']}", json={"content": "Actually mine"}, headers=co_headers)
@@ -183,7 +183,7 @@ async def test_reviews_and_comments_errors(client: AsyncClient, auth_headers: di
     # 7. Error: Delete others' comment
     comm2_resp = await client.post(f"/vibes/{vibe_id}/comments", json={"content": "Another"}, headers=auth_headers)
     comm2 = comm2_resp.json()
-    assert client.delete(f"/comments/{comm2['id']}", headers= awaitco_headers).status_code == 403
+    assert (await client.delete(f"/comments/{comm2['id']}", headers= co_headers)).status_code == 403
 
 @pytest.mark.asyncio
 async def test_collections_edge_cases(client: AsyncClient, auth_headers: dict):
@@ -203,7 +203,7 @@ async def test_collections_edge_cases(client: AsyncClient, auth_headers: dict):
     assert resp.status_code == 404
 
     # 4. Add to someone else's collection
-    client.post("/auth/register", json= await{"username": "col_owner", "email": "col@v.com", "password": "p"})
+    await client.post("/auth/register", json={"username": "col_owner", "email": "col@v.com", "password": "p"})
     login_resp = await client.post("/auth/login", data={"username": "col_owner", "password": "p"})
     col_owner_headers = {"Authorization": f"Bearer {login_resp.json()['access_token']}"}
     
@@ -231,7 +231,7 @@ async def test_reviews_comprehensive(client: AsyncClient, auth_headers: dict):
     assert resp.status_code == 400
 
     # 3. Delete review - Unauthorized
-    client.post("/auth/register", json= await{"username": "not_reviewer", "email": "nr@v.com", "password": "p"})
+    await client.post("/auth/register", json={"username": "not_reviewer", "email": "nr@v.com", "password": "p"})
     login_resp = await client.post("/auth/login", data={"username": "not_reviewer", "password": "p"})
     other_headers = {"Authorization": f"Bearer {login_resp.json()['access_token']}"}
     
@@ -239,10 +239,10 @@ async def test_reviews_comprehensive(client: AsyncClient, auth_headers: dict):
     assert resp.status_code == 403
 
     # 4. Delete review - Not found
-    assert client.delete("/reviews/9999", headers= awaitauth_headers).status_code == 404
+    assert (await client.delete("/reviews/9999", headers=auth_headers)).status_code == 404
 
     # 5. Delete review - Happy path
-    assert client.delete(f"/reviews/{review['id']}", headers= awaitauth_headers).status_code == 204
+    assert (await client.delete(f"/reviews/{review['id']}", headers=auth_headers)).status_code == 204
 
 @pytest.mark.asyncio
 async def test_follows_and_impls_edge_cases(client: AsyncClient, auth_headers: dict):
@@ -255,10 +255,10 @@ async def test_follows_and_impls_edge_cases(client: AsyncClient, auth_headers: d
     assert resp.status_code == 400
 
     # 2. Follow non-existent
-    assert client.post("/users/9999/follow", headers= awaitauth_headers).status_code == 404
+    assert (await client.post("/users/9999/follow", headers=auth_headers)).status_code == 404
 
     # 3. Already following
-    client.post("/auth/register", json= await{"username": "star", "email": "s@v.com", "password": "p"})
+    await client.post("/auth/register", json={"username": "star", "email": "s@v.com", "password": "p"})
     star_resp = await client.post("/auth/login", data={"username": "star", "password": "p"})
     star = star_resp.json()
     star_id = 4 # Incremental
@@ -267,17 +267,17 @@ async def test_follows_and_impls_edge_cases(client: AsyncClient, auth_headers: d
     star_info = star_info_resp.json()
     star_id = star_info["id"]
 
-    client.post(f"/users/{star_id}/follow", headers= awaitauth_headers)
-    assert client.post(f"/users/{star_id}/follow", headers= awaitauth_headers).status_code == 400
+    await client.post(f"/users/{star_id}/follow", headers=auth_headers)
+    assert (await client.post(f"/users/{star_id}/follow", headers=auth_headers)).status_code == 400
 
     # 4. Unfollow not following
-    assert client.delete("/users/9999/follow", headers= awaitauth_headers).status_code == 404
+    assert (await client.delete("/users/9999/follow", headers=auth_headers)).status_code == 404
 
     # 5. Implementation - Vibe not found
-    assert client.post("/vibes/9999/implementations", json= await{"url": "http://x.com"}, headers=auth_headers).status_code == 404
+    assert (await client.post("/vibes/9999/implementations", json={"url": "http://x.com"}, headers=auth_headers)).status_code == 404
 
     # 6. Mark official - Not found
-    assert client.patch("/implementations/9999/official", headers= awaitauth_headers).status_code == 404
+    assert (await client.patch("/implementations/9999/official", headers=auth_headers)).status_code == 404
 
     # 7. Mark official - Unauthorized
     vibe_resp = await client.post("/vibes/", json={"prompt_text": "Official Vibe"}, headers=auth_headers)

@@ -30,7 +30,7 @@ async def test_user_profile_and_links(client: AsyncClient, auth_headers: dict):
 @pytest.mark.asyncio
 async def test_user_update_unauthorized(client: AsyncClient, auth_headers: dict):
     # Register another user
-    client.post("/auth/register", json= await{"username": "victim", "email": "v@e.com", "password": "p"})
+    await client.post("/auth/register", json={"username": "victim", "email": "v@e.com", "password": "p"})
     victim_id = 2 # likely 2 if serial
     
     # Try to update victim with our headers

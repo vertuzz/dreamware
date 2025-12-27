@@ -30,12 +30,29 @@ async def create_collection(
         
     db.add(db_col)
     await db.commit()
-    await db.refresh(db_col)
-    return db_col
+    # Reload with eager loading for nested relationships
+    result = await db.execute(
+        select(Collection)
+        .options(
+            selectinload(Collection.vibes).selectinload(Vibe.tools),
+            selectinload(Collection.vibes).selectinload(Vibe.tags),
+            selectinload(Collection.vibes).selectinload(Vibe.images)
+        )
+        .filter(Collection.id == db_col.id)
+    )
+    return result.scalars().first()
 
 @router.get("/{col_id}", response_model=schemas.Collection)
 async def get_collection(col_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Collection).filter(Collection.id == col_id))
+    result = await db.execute(
+        select(Collection)
+        .options(
+            selectinload(Collection.vibes).selectinload(Vibe.tools),
+            selectinload(Collection.vibes).selectinload(Vibe.tags),
+            selectinload(Collection.vibes).selectinload(Vibe.images)
+        )
+        .filter(Collection.id == col_id)
+    )
     col = result.scalars().first()
     if not col:
         raise HTTPException(status_code=404, detail="Collection not found")
