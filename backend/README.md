@@ -9,13 +9,14 @@ The backend for VibeHub, a visual-first aggregation platform for AI-generated so
 - **Database**: PostgreSQL
 - **Migrations**: Alembic
 - **Security**: [JWT](https://pyjwt.readthedocs.io/) (via `python-jose`) & `bcrypt`
+- **HTTP Client**: [httpx](https://www.python-httpx.org/) for OAuth and external API calls
 - **Media**: [Cloudinary](https://cloudinary.com/) for image storage and transformations
 - **Package Manager**: [uv](https://github.com/astral-sh/uv)
 - **Containerization**: Docker Compose (for local DB)
 - **Testing**: `pytest`
 
 ## Core Features
-- **Auth**: Secure JWT-based authentication (Stable User IDs).
+- **Auth**: Secure JWT-based authentication (Stable User IDs) with **Social Login (Google & GitHub)** support.
 - **Vibes**: Full lifecycle of AI app concepts (Create, Feed, Fork, Status).
 - **Media**: Integrated Cloudinary support for image uploads and management.
 - **Social**: Comments, Vibe Checks (0-100% reviews), and Likes.
@@ -51,6 +52,12 @@ SECRET_KEY=your_secret_key_here
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
+
+# OAuth
+GOOGLE_CLIENT_ID=your_google_client_id
+GOOGLE_CLIENT_SECRET=your_google_client_secret
+GITHUB_CLIENT_ID=your_github_client_id
+GITHUB_CLIENT_SECRET=your_github_client_secret
 ```
 
 ### 5. Database Initialization

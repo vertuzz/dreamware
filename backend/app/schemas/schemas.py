@@ -174,6 +174,9 @@ class Token(BaseModel):
 class TokenData(BaseModel):
     username: Optional[str] = None
 
+class SocialLoginRequest(BaseModel):
+    code: str
+
 # Media
 class MediaResponse(BaseModel):
     url: str
