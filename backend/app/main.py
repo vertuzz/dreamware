@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from app.routers import (
     auth, users, vibes, comments, reviews, 
     likes, implementations, collections, 
-    follows, notifications, tools, tags
+    follows, notifications, tools, tags, media
 )
 
 app = FastAPI(
@@ -24,6 +24,7 @@ app.include_router(follows.router, prefix="/users", tags=["follows"])
 app.include_router(notifications.router, prefix="/notifications", tags=["notifications"])
 app.include_router(tools.router, prefix="/tools", tags=["tools"])
 app.include_router(tags.router, prefix="/tags", tags=["tags"])
+app.include_router(media.router, prefix="/media", tags=["media"])
 
 @app.get("/")
 async def root():

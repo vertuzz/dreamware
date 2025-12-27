@@ -173,3 +173,8 @@ class Token(BaseModel):
 
 class TokenData(BaseModel):
     username: Optional[str] = None
+
+# Media
+class MediaResponse(BaseModel):
+    url: str
+    public_id: str

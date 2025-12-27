@@ -15,10 +15,10 @@ Based on the review of `README.md`, `prd.md`, and the codebase, here are the mis
 - [ ] **Update User Model Usage**: Ensure `google_id` and `github_id` are correctly populated during social login.
 
 ## 🖼️ Media Handling
-- [ ] **Image Upload Strategy**:
+- [x] **Image Upload Strategy**:
     - Current implementation expects `image_url` string.
-    - [ ] **Decision**: Do we implement a backend upload endpoint (e.g., `POST /upload` -> S3/Local) or does Frontend upload directly to a cloud provider (Cloudinary/S3 Presigned URLs)?
-    - [ ] **Implement**: If backend handling is chosen, add `app/routers/media.py`.
+    - [x] **Decision**: Backend handling with Cloudinary.
+    - [x] **Implement**: Added `app/routers/media.py` with Cloudinary integration.
 
 
 ## 🚀 Deployment Prep
