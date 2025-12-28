@@ -16,7 +16,6 @@ class UserUpdate(BaseModel):
     username: Optional[str] = None
     email: Optional[str] = None
     avatar: Optional[str] = None
-    reputation_score: Optional[float] = None
 
 class UserLinkBase(BaseModel):
     label: str
@@ -27,11 +26,16 @@ class UserLink(UserLinkBase):
     user_id: int
     model_config = ConfigDict(from_attributes=True)
 
-class User(UserBase):
+class UserPublic(BaseModel):
     id: int
+    username: str
+    avatar: Optional[str] = None
     reputation_score: float
     links: List[UserLink] = []
     model_config = ConfigDict(from_attributes=True)
+
+class User(UserPublic):
+    email: EmailStr
 
 # Tool & Tag Schemas
 class ToolBase(BaseModel):
@@ -89,7 +93,6 @@ class Dream(DreamBase):
 class ImplementationBase(BaseModel):
     url: str
     description: Optional[str] = None
-    is_official: bool = False
 
 class ImplementationCreate(ImplementationBase):
     pass

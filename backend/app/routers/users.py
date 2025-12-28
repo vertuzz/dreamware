@@ -11,7 +11,7 @@ from app.routers.auth import get_current_user
 
 router = APIRouter()
 
-@router.get("/{user_id}", response_model=schemas.User)
+@router.get("/{user_id}", response_model=schemas.UserPublic)
 async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(User).options(selectinload(User.links)).filter(User.id == user_id)

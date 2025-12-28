@@ -1,4 +1,5 @@
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from app.routers import (
     auth, users, dreams, comments, reviews, 
     likes, implementations, collections, 
@@ -9,6 +10,15 @@ app = FastAPI(
     title="Dreamware API",
     description="Backend for Dreamware - The Pinterest for Engineers",
     version="0.1.0"
+)
+
+# Set all CORS enabled origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 # Register routers

@@ -21,6 +21,12 @@ async def create_tag(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
+    if current_user.id != 1:
+        raise HTTPException(
+            status_code=403,
+            detail="Only admin can create tags"
+        )
+    
     db_tag = Tag(name=tag_in.name)
     db.add(db_tag)
     await db.commit()

@@ -19,9 +19,15 @@ async def test_user_profile_and_links(client: AsyncClient, auth_headers: dict):
     assert link_resp.status_code == 200
     link_id = link_resp.json()["id"]
     
-    # Check link in profile
+    # Check link in profile (publicly)
     profile_resp = await client.get(f"/users/{user_id}")
-    assert any(link["label"] == "GitHub" for link in profile_resp.json()["links"])
+    profile_data = profile_resp.json()
+    assert any(link["label"] == "GitHub" for link in profile_data["links"])
+    assert "email" not in profile_data, "Email should not be exposed in public profiles"
+    
+    # Verify email is still in 'me'
+    me_resp = await client.get("/auth/me", headers=auth_headers)
+    assert "email" in me_resp.json(), "Email should be present in private 'me' profile"
     
     # 4. Delete Link
     del_resp = await client.delete(f"/users/{user_id}/links/{link_id}", headers=auth_headers)

@@ -213,8 +213,18 @@ async def test_collections_edge_cases(client: AsyncClient, auth_headers: dict):
     # 5. Get private collection
     priv_col_resp = await client.post("/collections/", json={"name": "Secret", "is_public": False}, headers=auth_headers)
     priv_col = priv_col_resp.json()
+    
+    # Unauthorized access (no token) should be 403 (or 401 depending on how we want it, but code says 403 if not authorized)
     resp = await client.get(f"/collections/{priv_col['id']}")
-    assert resp.status_code == 200 # Current implementation doesn't block access if not public (line 39-40 in collections.py)
+    assert resp.status_code == 403
+    
+    # Authorized access (owner) should be 200
+    resp = await client.get(f"/collections/{priv_col['id']}", headers=auth_headers)
+    assert resp.status_code == 200
+    
+    # Unauthorized access (another user) should be 403
+    resp = await client.get(f"/collections/{priv_col['id']}", headers=col_owner_headers)
+    assert resp.status_code == 403
 
 @pytest.mark.asyncio
 async def test_reviews_comprehensive(client: AsyncClient, auth_headers: dict):

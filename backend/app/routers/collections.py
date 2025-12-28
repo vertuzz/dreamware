@@ -2,12 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
-from typing import List
+from typing import List, Optional
 
 from app.database import get_db
 from app.models import Collection, User, Dream, collection_dreams
 from app.schemas import schemas
-from app.routers.auth import get_current_user
+from app.routers.auth import get_current_user, get_current_user_optional
 
 router = APIRouter()
 
@@ -43,7 +43,11 @@ async def create_collection(
     return result.scalars().first()
 
 @router.get("/{col_id}", response_model=schemas.Collection)
-async def get_collection(col_id: int, db: AsyncSession = Depends(get_db)):
+async def get_collection(
+    col_id: int, 
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
     result = await db.execute(
         select(Collection)
         .options(
@@ -56,9 +60,11 @@ async def get_collection(col_id: int, db: AsyncSession = Depends(get_db)):
     col = result.scalars().first()
     if not col:
         raise HTTPException(status_code=404, detail="Collection not found")
+    
     if not col.is_public:
-        # Check ownership if private (skipped for simplicity in this public getter)
-        pass
+        if not current_user or col.owner_id != current_user.id:
+            raise HTTPException(status_code=403, detail="This collection is private")
+            
     return col
 
 @router.post("/{col_id}/dreams/{dream_id}")

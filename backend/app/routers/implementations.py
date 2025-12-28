@@ -61,6 +61,8 @@ async def mark_official(
     
     result = await db.execute(select(Dream).filter(Dream.id == impl.dream_id))
     dream = result.scalars().first()
+    if not dream:
+        raise HTTPException(status_code=404, detail="Dream not found")
     if dream.creator_id != current_user.id:
         raise HTTPException(status_code=403, detail="Only dream creator can mark implementation as official")
     

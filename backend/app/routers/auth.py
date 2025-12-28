@@ -18,6 +18,7 @@ from app.core.config import settings
 router = APIRouter()
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
+oauth2_scheme_optional = OAuth2PasswordBearer(tokenUrl="auth/login", auto_error=False)
 
 async def get_current_user(db: AsyncSession = Depends(get_db), token: str = Depends(oauth2_scheme)) -> User:
     credentials_exception = HTTPException(
@@ -41,6 +42,23 @@ async def get_current_user(db: AsyncSession = Depends(get_db), token: str = Depe
     if user is None:
         raise credentials_exception
     return user
+
+async def get_current_user_optional(db: AsyncSession = Depends(get_db), token: Optional[str] = Depends(oauth2_scheme_optional)) -> Optional[User]:
+    if not token:
+        return None
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        user_id_str: str = payload.get("sub")
+        if user_id_str is None:
+            return None
+        user_id = int(user_id_str)
+    except (JWTError, ValueError):
+        return None
+    
+    result = await db.execute(
+        select(User).options(selectinload(User.links)).filter(User.id == user_id)
+    )
+    return result.scalars().first()
 
 @router.post("/register", response_model=schemas.User)
 async def register(user_in: schemas.UserCreate, db: AsyncSession = Depends(get_db)):
