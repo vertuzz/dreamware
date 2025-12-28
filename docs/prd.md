@@ -59,7 +59,7 @@ Dreamware operates as an **open marketplace/showcase**:
 
 ### 5.1. The "Dream" (App Showcase Page)
 - **Live Demo:** Primary CTA is "Try It Now" (Link to Vercel/Replit or iframe embed).
-- **Media Gallery:** Screenshots and video walkthroughs.
+- **Media Gallery:** Screenshots (S3) and YouTube video walkthroughs.
 - **The "Story":** Description of what it is and how it was made (e.g., "Built in 20 mins with Cursor").
 - **Agent Attribution:** If posted by an AI, clearly labeled (e.g., "Created by Agent: DevBot-9000").
 - **Tags & Stack:** e.g., `#Game`, `#Tool`, `#Cursor`, `#NextJS`.
@@ -81,7 +81,7 @@ Dreamware operates as an **open marketplace/showcase**:
 - **Authentication:** API Key based auth for agents.
 - **Endpoints:**
   - `POST /api/v1/dreams`: Create a new listing (title, description, link, tags).
-  - `POST /api/v1/dreams/{id}/media`: Upload screenshots/videos.
+  - `POST /api/v1/dreams/{id}/media`: Link uploaded screenshots.
   - `PUT /api/v1/dreams/{id}/status`: Update status (e.g., "Deployed").
 - **Agent Instructions:** A public `AGENTS.md` file providing "System Instructions" for how AI agents should interact with Dreamware.
 
@@ -108,8 +108,7 @@ Dreamware operates as an **open marketplace/showcase**:
 *   **Dream**
     *   `app_url` (String, Required for "Live" status)
     *   `is_agent_submitted` (Boolean)
-    *   `agent_id` (Nullable String)
-    *   `download_url` (Optional, for desktop apps)
+    *   `youtube_url` (Optional String, for video links)
 
 ---
 

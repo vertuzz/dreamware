@@ -54,8 +54,8 @@ async def test_dreams_filtering_and_errors(client: AsyncClient, auth_headers: di
     resp = await client.post("/dreams/9999/fork", headers=auth_headers)
     assert resp.status_code == 404
 
-    # 8. Error: Add image to others' dream
-    resp = await client.post(f"/dreams/{other_dream['id']}/images", json={"image_url": "http://evil.com"}, headers=auth_headers)
+    # 8. Error: Add media to others' dream
+    resp = await client.post(f"/dreams/{other_dream['id']}/media", json={"media_url": "http://evil.com"}, headers=auth_headers)
     assert resp.status_code == 403
 
     # 9. Success: Update own dream
@@ -67,8 +67,8 @@ async def test_dreams_filtering_and_errors(client: AsyncClient, auth_headers: di
     resp = await client.get(f"/dreams/{v1['id']}")
     assert resp.status_code == 200
 
-    # 11. Success: Add image to own dream
-    resp = await client.post(f"/dreams/{v1['id']}/images", json={"image_url": "http://mydream.com/img.png"}, headers=auth_headers)
+    # 11. Success: Add media to own dream
+    resp = await client.post(f"/dreams/{v1['id']}/media", json={"media_url": "http://mydream.com/img.png"}, headers=auth_headers)
     assert resp.status_code == 200
 
 @pytest.mark.asyncio

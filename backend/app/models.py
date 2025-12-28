@@ -113,14 +113,14 @@ class Tag(Base):
     
     dreams: Mapped[List["Dream"]] = relationship("Dream", secondary=dream_tags, back_populates="tags")
 
-class DreamImage(Base):
-    __tablename__ = "dream_images"
+class DreamMedia(Base):
+    __tablename__ = "dream_media"
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
     dream_id: Mapped[int] = mapped_column(ForeignKey("dreams.id"), index=True)
-    image_url: Mapped[str] = mapped_column(String(512))
+    media_url: Mapped[str] = mapped_column(String(512))
     
-    dream: Mapped["Dream"] = relationship("Dream", back_populates="images")
+    dream: Mapped["Dream"] = relationship("Dream", back_populates="media")
 
 class Dream(Base):
     __tablename__ = "dreams"
@@ -135,6 +135,7 @@ class Dream(Base):
     
     # New fields for Dreamware v2.0
     app_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
+    youtube_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     is_agent_submitted: Mapped[bool] = mapped_column(Boolean, default=False)
     
     # Lineage
@@ -145,7 +146,7 @@ class Dream(Base):
 
     # Relationships
     creator: Mapped["User"] = relationship("User", back_populates="dreams")
-    images: Mapped[List["DreamImage"]] = relationship("DreamImage", back_populates="dream", cascade="all, delete-orphan")
+    media: Mapped[List["DreamMedia"]] = relationship("DreamMedia", back_populates="dream", cascade="all, delete-orphan")
     tools: Mapped[List["Tool"]] = relationship("Tool", secondary=dream_tools, back_populates="dreams")
     tags: Mapped[List["Tag"]] = relationship("Tag", secondary=dream_tags, back_populates="dreams")
     comments: Mapped[List["Comment"]] = relationship("Comment", back_populates="dream", cascade="all, delete-orphan")

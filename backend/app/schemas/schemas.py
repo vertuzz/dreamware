@@ -53,11 +53,11 @@ class Tag(TagBase):
     id: int
     model_config = ConfigDict(from_attributes=True)
 
-# Dream Image
-class DreamImageBase(BaseModel):
-    image_url: str
+# Dream Media
+class DreamMediaBase(BaseModel):
+    media_url: str
 
-class DreamImage(DreamImageBase):
+class DreamMedia(DreamMediaBase):
     id: int
     dream_id: int
     model_config = ConfigDict(from_attributes=True)
@@ -69,6 +69,7 @@ class DreamBase(BaseModel):
     extra_specs: Optional[dict] = None
     status: DreamStatus = DreamStatus.CONCEPT
     app_url: Optional[str] = None
+    youtube_url: Optional[str] = None
     is_agent_submitted: bool = False
 
 class DreamCreate(DreamBase):
@@ -82,6 +83,7 @@ class DreamUpdate(BaseModel):
     extra_specs: Optional[dict] = None
     status: Optional[DreamStatus] = None
     app_url: Optional[str] = None
+    youtube_url: Optional[str] = None
     is_agent_submitted: Optional[bool] = None
 
 class Dream(DreamBase):
@@ -89,7 +91,7 @@ class Dream(DreamBase):
     creator_id: int
     parent_dream_id: Optional[int] = None
     created_at: datetime
-    images: List[DreamImage] = []
+    media: List[DreamMedia] = []
     tools: List[Tool] = []
     tags: List[Tag] = []
     model_config = ConfigDict(from_attributes=True)

@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 from typing import List, Optional
 
 from app.database import get_db
-from app.models import Dream, User, Tool, Tag, DreamImage, DreamStatus, dream_tools, dream_tags
+from app.models import Dream, User, Tool, Tag, DreamMedia, DreamStatus, dream_tools, dream_tags
 from app.schemas import schemas
 from app.routers.auth import get_current_user
 
@@ -24,7 +24,7 @@ async def get_dreams(
     sort_by: str = Query("created_at", enum=["created_at", "score", "likes"]),
     db: AsyncSession = Depends(get_db)
 ):
-    query = select(Dream).options(selectinload(Dream.tools), selectinload(Dream.tags), selectinload(Dream.images))
+    query = select(Dream).options(selectinload(Dream.tools), selectinload(Dream.tags), selectinload(Dream.media))
     
     if tool_id:
         query = query.join(Dream.tools).filter(Tool.id == tool_id)
@@ -75,6 +75,7 @@ async def create_dream(
         extra_specs=dream_in.extra_specs,
         status=dream_in.status,
         app_url=dream_in.app_url,
+        youtube_url=dream_in.youtube_url,
         is_agent_submitted=dream_in.is_agent_submitted,
         parent_dream_id=dream_in.parent_dream_id
     )
@@ -94,7 +95,7 @@ async def create_dream(
     # Reload with eager loading
     result = await db.execute(
         select(Dream)
-        .options(selectinload(Dream.tools), selectinload(Dream.tags), selectinload(Dream.images))
+        .options(selectinload(Dream.tools), selectinload(Dream.tags), selectinload(Dream.media))
         .filter(Dream.id == db_dream.id)
     )
     return result.scalars().first()
@@ -103,7 +104,7 @@ async def create_dream(
 async def get_dream(dream_id: int, db: AsyncSession = Depends(get_db)):
     result = await db.execute(
         select(Dream)
-        .options(selectinload(Dream.tools), selectinload(Dream.tags), selectinload(Dream.images))
+        .options(selectinload(Dream.tools), selectinload(Dream.tags), selectinload(Dream.media))
         .filter(Dream.id == dream_id)
     )
     dream = result.scalars().first()
@@ -120,7 +121,7 @@ async def update_dream(
 ):
     result = await db.execute(
         select(Dream)
-        .options(selectinload(Dream.tools), selectinload(Dream.tags), selectinload(Dream.images))
+        .options(selectinload(Dream.tools), selectinload(Dream.tags), selectinload(Dream.media))
         .filter(Dream.id == dream_id)
     )
     db_dream = result.scalars().first()
@@ -138,7 +139,7 @@ async def update_dream(
     # Reload to ensure serialization works
     result = await db.execute(
         select(Dream)
-        .options(selectinload(Dream.tools), selectinload(Dream.tags), selectinload(Dream.images))
+        .options(selectinload(Dream.tools), selectinload(Dream.tags), selectinload(Dream.media))
         .filter(Dream.id == db_dream.id)
     )
     return result.scalars().first()
@@ -177,15 +178,15 @@ async def fork_dream(
     # Reload with eager loading
     result = await db.execute(
         select(Dream)
-        .options(selectinload(Dream.tools), selectinload(Dream.tags), selectinload(Dream.images))
+        .options(selectinload(Dream.tools), selectinload(Dream.tags), selectinload(Dream.media))
         .filter(Dream.id == db_dream.id)
     )
     return result.scalars().first()
 
-@router.post("/{dream_id}/images", response_model=schemas.DreamImage)
-async def add_dream_image(
+@router.post("/{dream_id}/media", response_model=schemas.DreamMedia)
+async def add_dream_media(
     dream_id: int,
-    image_in: schemas.DreamImageBase,
+    media_in: schemas.DreamMediaBase,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
@@ -194,8 +195,8 @@ async def add_dream_image(
     if not db_dream or db_dream.creator_id != current_user.id:
         raise HTTPException(status_code=403, detail="Not authorized")
     
-    db_image = DreamImage(**image_in.model_dump(), dream_id=dream_id)
-    db.add(db_image)
+    db_media = DreamMedia(**media_in.model_dump(), dream_id=dream_id)
+    db.add(db_media)
     await db.commit()
-    await db.refresh(db_image)
-    return db_image
+    await db.refresh(db_media)
+    return db_media

@@ -36,7 +36,7 @@ async def create_collection(
         .options(
             selectinload(Collection.dreams).selectinload(Dream.tools),
             selectinload(Collection.dreams).selectinload(Dream.tags),
-            selectinload(Collection.dreams).selectinload(Dream.images)
+            selectinload(Collection.dreams).selectinload(Dream.media)
         )
         .filter(Collection.id == db_col.id)
     )
@@ -53,7 +53,7 @@ async def get_collection(
         .options(
             selectinload(Collection.dreams).selectinload(Dream.tools),
             selectinload(Collection.dreams).selectinload(Dream.tags),
-            selectinload(Collection.dreams).selectinload(Dream.images)
+            selectinload(Collection.dreams).selectinload(Dream.media)
         )
         .filter(Collection.id == col_id)
     )
