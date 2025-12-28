@@ -29,6 +29,7 @@ class Settings(BaseSettings):
     AWS_ACCESS_KEY_ID: Optional[str] = os.getenv("AWS_ACCESS_KEY_ID")
     AWS_SECRET_ACCESS_KEY: Optional[str] = os.getenv("AWS_SECRET_ACCESS_KEY")
     AWS_REGION: str = os.getenv("AWS_REGION", "us-east-1")
+    S3_ENDPOINT_URL: Optional[str] = os.getenv("S3_ENDPOINT_URL")
 
     # OAuth Settings
     GOOGLE_CLIENT_ID: Optional[str] = os.getenv("GOOGLE_CLIENT_ID")

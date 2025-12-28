@@ -179,5 +179,10 @@ class SocialLoginRequest(BaseModel):
 
 # Media
 class MediaResponse(BaseModel):
-    url: str
-    public_id: str
+    upload_url: str
+    download_url: str
+    file_key: str
+
+class PresignedUrlRequest(BaseModel):
+    filename: str
+    content_type: str
