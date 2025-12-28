@@ -4,9 +4,9 @@ from httpx import AsyncClient
 @pytest.mark.asyncio
 async def test_dream_search_by_tag_name(client: AsyncClient, auth_headers: dict):
     # 1. Create tools and tags
-    await client.post("/tools/", json={"name": "Replit"})
-    await client.post("/tags/", json={"name": "Cyberpunk"})
-    await client.post("/tags/", json={"name": "Minimalist"})
+    await client.post("/tools/", json={"name": "Replit"}, headers=auth_headers)
+    await client.post("/tags/", json={"name": "Cyberpunk"}, headers=auth_headers)
+    await client.post("/tags/", json={"name": "Minimalist"}, headers=auth_headers)
     
     # 2. Get IDs for some
     tag_resp = await client.get("/tags/")
@@ -59,7 +59,7 @@ async def test_dream_search_by_tag_name(client: AsyncClient, auth_headers: dict)
     assert len(resp.json()) == 1
     
     # Multiple tools
-    await client.post("/tools/", json={"name": "Cursor"})
+    await client.post("/tools/", json={"name": "Cursor"}, headers=auth_headers)
     resp = await client.get("/dreams/?tool=Replit,Cursor")
     assert len(resp.json()) == 1 # still 1 because only dream1 has Replit and none have Cursor yet
     

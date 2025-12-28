@@ -4,8 +4,8 @@ from httpx import AsyncClient
 @pytest.mark.asyncio
 async def test_dream_lifecycle(client: AsyncClient, auth_headers: dict):
     # 1. Create tools and tags first (admin-like public for now)
-    tool_resp = await client.post("/tools/", json={"name": "Cursor"})
-    tag_resp = await client.post("/tags/", json={"name": "SaaS"})
+    tool_resp = await client.post("/tools/", json={"name": "Cursor"}, headers=auth_headers)
+    tag_resp = await client.post("/tags/", json={"name": "SaaS"}, headers=auth_headers)
     tool_id = tool_resp.json()["id"]
     tag_id = tag_resp.json()["id"]
     

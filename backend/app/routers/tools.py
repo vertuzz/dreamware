@@ -4,8 +4,9 @@ from sqlalchemy import select
 from typing import List
 
 from app.database import get_db
-from app.models import Tool
+from app.models import Tool, User
 from app.schemas import schemas
+from app.routers.auth import get_current_user
 
 router = APIRouter()
 
@@ -15,8 +16,17 @@ async def get_tools(db: AsyncSession = Depends(get_db)):
     return result.scalars().all()
 
 @router.post("/", response_model=schemas.Tool)
-async def create_tool(tool_in: schemas.ToolBase, db: AsyncSession = Depends(get_db)):
-    # Simple admin restriction or public? For now anyone for dev
+async def create_tool(
+    tool_in: schemas.ToolBase, 
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.id != 1:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only admin can create tools"
+        )
+    
     db_tool = Tool(name=tool_in.name)
     db.add(db_tool)
     await db.commit()
