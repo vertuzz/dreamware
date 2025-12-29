@@ -10,6 +10,7 @@ export interface DreamQueryParams {
     tag?: string;
     search?: string;
     status?: 'Concept' | 'WIP' | 'Live';
+    creator_id?: number;
     sort_by?: 'trending' | 'newest' | 'top_rated' | 'likes';
 }
 

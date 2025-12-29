@@ -21,7 +21,7 @@ export default function Header({ onSearch }: HeaderProps) {
               </span>
             </div>
             <h2 className="text-xl font-bold tracking-tight text-[#0d111b] dark:text-white">
-              DreamMarket
+              Dreamware
             </h2>
           </Link>
 
