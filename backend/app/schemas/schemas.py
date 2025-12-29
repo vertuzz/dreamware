@@ -138,6 +138,16 @@ class Comment(CommentBase):
     likes_count: int
     model_config = ConfigDict(from_attributes=True)
 
+class CommentUser(BaseModel):
+    id: int
+    username: str
+    avatar: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+class CommentWithUser(Comment):
+    user: Optional[CommentUser] = None
+    model_config = ConfigDict(from_attributes=True)
+
 # Review
 class ReviewBase(BaseModel):
     score: float

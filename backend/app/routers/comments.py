@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.orm import selectinload
 from typing import List
 
 from app.database import get_db
@@ -10,9 +11,14 @@ from app.routers.auth import get_current_user
 
 router = APIRouter()
 
-@router.get("/dreams/{dream_id}/comments", response_model=List[schemas.Comment])
+@router.get("/dreams/{dream_id}/comments", response_model=List[schemas.CommentWithUser])
 async def get_dream_comments(dream_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(Comment).filter(Comment.dream_id == dream_id))
+    result = await db.execute(
+        select(Comment)
+        .options(selectinload(Comment.user))
+        .filter(Comment.dream_id == dream_id)
+        .order_by(Comment.created_at.desc())
+    )
     return result.scalars().all()
 
 @router.post("/dreams/{dream_id}/comments", response_model=schemas.Comment)

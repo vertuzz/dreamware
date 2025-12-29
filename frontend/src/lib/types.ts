@@ -68,3 +68,21 @@ export interface DreamCreate {
     tool_ids?: number[];
     tag_ids?: number[];
 }
+
+export interface Comment {
+    id: number;
+    dream_id: number;
+    user_id: number;
+    content: string;
+    created_at: string;
+    likes_count: number;
+    user?: {
+        id: number;
+        username: string;
+        avatar?: string;
+    };
+}
+
+export interface CommentCreate {
+    content: string;
+}

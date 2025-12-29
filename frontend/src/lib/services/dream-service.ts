@@ -1,5 +1,5 @@
 import api from '../api';
-import type { Dream, DreamCreate } from '../types';
+import type { Dream, DreamCreate, Comment, CommentCreate } from '../types';
 
 export interface DreamQueryParams {
     skip?: number;
@@ -44,5 +44,33 @@ export const dreamService = {
     forkDream: async (id: number): Promise<Dream> => {
         const response = await api.post(`/dreams/${id}/fork`);
         return response.data;
+    },
+
+    // Like endpoints
+    likeDream: async (id: number): Promise<void> => {
+        await api.post(`/dreams/${id}/like`);
+    },
+
+    unlikeDream: async (id: number): Promise<void> => {
+        await api.delete(`/dreams/${id}/like`);
+    },
+
+    // Comment endpoints
+    getComments: async (dreamId: number): Promise<Comment[]> => {
+        const response = await api.get(`/dreams/${dreamId}/comments`);
+        return response.data;
+    },
+
+    createComment: async (dreamId: number, comment: CommentCreate): Promise<Comment> => {
+        const response = await api.post(`/dreams/${dreamId}/comments`, comment);
+        return response.data;
+    },
+
+    likeComment: async (commentId: number): Promise<void> => {
+        await api.post(`/comments/${commentId}/like`);
+    },
+
+    unlikeComment: async (commentId: number): Promise<void> => {
+        await api.delete(`/comments/${commentId}/like`);
     },
 };

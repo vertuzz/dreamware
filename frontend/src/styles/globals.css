@@ -157,6 +157,22 @@
   display: none;
 }
 
+/* Custom scrollbar for light scrollbars */
+.custom-scrollbar::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #cbd5e1;
+  border-radius: 20px;
+}
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #475569;
+}
+
 /* Material Symbols styles */
 .material-symbols-outlined {
   font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
@@ -164,4 +180,15 @@
 
 .material-symbols-outlined.filled {
   font-variation-settings: 'FILL' 1;
+}
+
+/* Shine animation for buttons */
+@keyframes shine {
+  100% {
+    left: 125%;
+  }
+}
+
+.group:hover .animate-shine {
+  animation: shine 0.75s;
 }
