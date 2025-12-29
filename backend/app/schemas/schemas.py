@@ -64,7 +64,8 @@ class DreamMedia(DreamMediaBase):
 
 # Dream
 class DreamBase(BaseModel):
-    prompt_text: str
+    title: Optional[str] = None
+    prompt_text: Optional[str] = None
     prd_text: Optional[str] = None
     extra_specs: Optional[dict] = None
     status: DreamStatus = DreamStatus.CONCEPT
@@ -78,6 +79,7 @@ class DreamCreate(DreamBase):
     tag_ids: List[int] = []
 
 class DreamUpdate(BaseModel):
+    title: Optional[str] = None
     prompt_text: Optional[str] = None
     prd_text: Optional[str] = None
     extra_specs: Optional[dict] = None

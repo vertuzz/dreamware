@@ -112,6 +112,7 @@ async def create_dream(
 ):
     db_dream = Dream(
         creator_id=current_user.id,
+        title=dream_in.title,
         prompt_text=dream_in.prompt_text,
         prd_text=dream_in.prd_text,
         extra_specs=dream_in.extra_specs,
@@ -201,9 +202,10 @@ async def fork_dream(
     if not parent_dream:
         raise HTTPException(status_code=404, detail="Parent dream not found")
     
-    # Simple fork: copy prompt and set parent
+    # Simple fork: copy title and prompt and set parent
     db_dream = Dream(
         creator_id=current_user.id,
+        title=parent_dream.title,
         prompt_text=parent_dream.prompt_text,
         prd_text=parent_dream.prd_text,
         extra_specs=parent_dream.extra_specs,

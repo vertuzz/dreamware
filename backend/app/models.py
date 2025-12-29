@@ -129,7 +129,8 @@ class Dream(Base):
     creator_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
     
     # Core content
-    prompt_text: Mapped[str] = mapped_column(Text, nullable=False)
+    title: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    prompt_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     prd_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     extra_specs: Mapped[Optional[dict]] = mapped_column(JSON().with_variant(postgresql.JSONB, "postgresql"), nullable=True)
     

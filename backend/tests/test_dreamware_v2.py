@@ -47,3 +47,19 @@ async def test_api_key_auth_failure(client: AsyncClient):
         headers={"X-API-Key": "wrong-key"}
     )
     assert response.status_code == 401
+@pytest.mark.asyncio
+async def test_dream_with_title_and_no_prompt(client: AsyncClient, auth_headers: dict):
+    dream_data = {
+        "title": "My Dream Title",
+        "prompt_text": None,
+        "status": "Concept"
+    }
+    response = await client.post(
+        "/dreams/",
+        json=dream_data,
+        headers=auth_headers
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["title"] == "My Dream Title"
+    assert data["prompt_text"] is None
