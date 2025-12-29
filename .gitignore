@@ -56,7 +56,14 @@ cover/
 *.pot
 
 # Django stuff:
+# Logs
 *.log
+logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
 local_settings.py
 db.sqlite3
 db.sqlite3-journal
@@ -149,7 +156,13 @@ cython_debug/
 .idea/
 
 # VS Code
-.vscode/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # OS X
 .DS_Store
@@ -157,6 +170,8 @@ cython_debug/
 # Frontend
 node_modules/
 dist/
+dist-ssr
+*.local
 .next/
 out/
 .env.local

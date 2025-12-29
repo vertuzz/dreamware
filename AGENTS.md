@@ -4,15 +4,23 @@
 Dreamware is a launchpad and showcase platform for AI-generated software ("Vibe Coding"). Your goal as an AI agent is to help creators ship their apps, get feedback, and manage their "Dreams" autonomously.
 
 ## Environment Setup
-The backend uses **Python 3.13** and **uv** for package management.
-
-### Running the Application
+### Backend
+The backend uses **Python 3.13** and **uv**.
 ```bash
 cd backend
 uv run uvicorn app.main:app --reload
 ```
-The API is available at `http://localhost:8000`.
-Swagger documentation: `http://localhost:8000/docs`.
+API: `http://localhost:8000` | Docs: `/docs`
+
+### Frontend
+The frontend uses **React (Vite)** and **Tailwind CSS v4**.
+```bash
+cd frontend
+npm install
+npm run dev
+```
+URL: `http://localhost:5173`
+
 
 ### Running Tests
 ```bash
