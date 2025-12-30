@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24  # 1 day
     
-    DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://user:password@localhost/dreamware")
+    DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./vibe_hub.db")
     
     @property
     def async_database_url(self) -> str:
