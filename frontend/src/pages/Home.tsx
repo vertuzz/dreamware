@@ -1,11 +1,11 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { dreamService, type DreamQueryParams } from '~/lib/services/dream-service';
-import type { Dream } from '~/lib/types';
+import type { Dream, Tag, Tool } from '~/lib/types';
 import DreamCard from '~/components/dreams/DreamCard';
 import DreamCardSkeleton from '~/components/dreams/DreamCardSkeleton';
+import FilterBar from '~/components/dreams/FilterBar';
 import Header from '~/components/layout/Header';
 
-type FilterCategory = 'all' | 'agents' | 'components' | 'apps' | 'games';
 type SortOption = 'trending' | 'newest' | 'top_rated' | 'likes';
 
 // Map aspect ratios for masonry variety
@@ -24,7 +24,10 @@ export default function Home() {
     const [dreams, setDreams] = useState<Dream[]>([]);
     const [loading, setLoading] = useState(true);
     const [loadingMore, setLoadingMore] = useState(false);
-    const [activeFilter, setActiveFilter] = useState<FilterCategory>('all');
+    const [tags, setTags] = useState<Tag[]>([]);
+    const [tools, setTools] = useState<Tool[]>([]);
+    const [selectedTagIds, setSelectedTagIds] = useState<number[]>([]);
+    const [selectedToolIds, setSelectedToolIds] = useState<number[]>([]);
     const [sortBy, setSortBy] = useState<SortOption>('trending');
     const [searchQuery, setSearchQuery] = useState('');
     const [page, setPage] = useState(1);
@@ -66,16 +69,12 @@ export default function Home() {
                 params.search = searchQuery;
             }
 
-            // Add tag filter based on category
-            if (activeFilter !== 'all') {
-                const tagMap: Record<FilterCategory, string> = {
-                    all: '',
-                    agents: 'agent',
-                    components: 'ui-component',
-                    apps: 'full-app',
-                    games: 'game',
-                };
-                params.tag = tagMap[activeFilter];
+            // Add multi-select filters
+            if (selectedTagIds.length > 0) {
+                params.tag_id = selectedTagIds;
+            }
+            if (selectedToolIds.length > 0) {
+                params.tool_id = selectedToolIds;
             }
 
             const data = await dreamService.getDreams(params);
@@ -93,14 +92,30 @@ export default function Home() {
             setLoading(false);
             setLoadingMore(false);
         }
-    }, [page, sortBy, activeFilter, searchQuery]);
+    }, [page, sortBy, selectedTagIds, selectedToolIds, searchQuery]);
 
     // Initial fetch and filter/sort changes
+    useEffect(() => {
+        const loadInitialData = async () => {
+            try {
+                const [tagsData, toolsData] = await Promise.all([
+                    dreamService.getTags(),
+                    dreamService.getTools()
+                ]);
+                setTags(tagsData);
+                setTools(toolsData);
+            } catch (err) {
+                console.error('Failed to fetch filter data:', err);
+            }
+        };
+        loadInitialData();
+    }, []);
+
     useEffect(() => {
         setPage(1);
         setHasMore(true);
         fetchDreams(true);
-    }, [sortBy, activeFilter]);
+    }, [sortBy, selectedTagIds, selectedToolIds]);
 
     // Fetch more when page changes
     useEffect(() => {
@@ -121,8 +136,9 @@ export default function Home() {
         return () => clearTimeout(timer);
     }, [searchQuery]);
 
-    const handleFilterChange = (filter: FilterCategory) => {
-        setActiveFilter(filter);
+    const handleFilterChange = (selected: { tagIds: number[]; toolIds: number[] }) => {
+        setSelectedTagIds(selected.tagIds);
+        setSelectedToolIds(selected.toolIds);
     };
 
     const handleSortChange = (sort: SortOption) => {
@@ -137,13 +153,7 @@ export default function Home() {
         likes: 'Most Liked',
     };
 
-    const filterButtons: { key: FilterCategory; label: string; icon: string }[] = [
-        { key: 'all', label: 'All', icon: '' },
-        { key: 'agents', label: 'Agents', icon: 'smart_toy' },
-        { key: 'components', label: 'UI Components', icon: 'view_quilt' },
-        { key: 'apps', label: 'Full Apps', icon: 'web_asset' },
-        { key: 'games', label: 'Games', icon: 'stadia_controller' },
-    ];
+    // Removed hardcoded filter buttons logic
 
     return (
         <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
@@ -166,25 +176,46 @@ export default function Home() {
                 </div>
 
                 {/* Filters & Sort */}
-                <div className="sticky top-[72px] z-40 bg-[var(--background)]/95 backdrop-blur-sm py-4 mb-8 flex flex-col sm:flex-row items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-800">
-                    {/* Filter Chips */}
-                    <div className="w-full sm:w-auto overflow-x-auto pb-2 sm:pb-0 scrollbar-hide">
-                        <div className="flex gap-3">
-                            {filterButtons.map((btn) => (
-                                <button
-                                    key={btn.key}
-                                    onClick={() => handleFilterChange(btn.key)}
-                                    className={`flex h-9 items-center justify-center gap-2 rounded-full px-5 whitespace-nowrap transition-all ${activeFilter === btn.key
-                                            ? 'bg-primary text-white shadow-sm hover:bg-primary-dark'
-                                            : 'bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 shadow-sm hover:border-primary hover:text-primary'
-                                        }`}
-                                >
-                                    {btn.icon && (
-                                        <span className="material-symbols-outlined text-[18px]">{btn.icon}</span>
-                                    )}
-                                    <span className="text-sm font-medium">{btn.label}</span>
-                                </button>
-                            ))}
+                <div className="sticky top-[72px] z-40 bg-[var(--background)]/95 backdrop-blur-sm py-4 mb-8 flex items-center justify-between gap-4 border-b border-gray-200 dark:border-gray-800">
+                    <div className="flex items-center gap-3">
+                        <FilterBar
+                            tags={tags}
+                            tools={tools}
+                            selectedTagIds={selectedTagIds}
+                            selectedToolIds={selectedToolIds}
+                            onChange={handleFilterChange}
+                        />
+
+                        {/* Selected chips for quick individual removal */}
+                        <div className="hidden md:flex flex-wrap gap-2 overflow-x-auto scrollbar-hide">
+                            {selectedTagIds.map(id => {
+                                const tag = tags.find(t => t.id === id);
+                                if (!tag) return null;
+                                return (
+                                    <button
+                                        key={`tag-${id}`}
+                                        onClick={() => setSelectedTagIds(prev => prev.filter(tid => tid !== id))}
+                                        className="inline-flex h-7 items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 text-[12px] font-medium text-primary hover:bg-primary/10 transition-colors"
+                                    >
+                                        {tag.name}
+                                        <span className="material-symbols-outlined text-[14px]">close</span>
+                                    </button>
+                                );
+                            })}
+                            {selectedToolIds.map(id => {
+                                const tool = tools.find(t => t.id === id);
+                                if (!tool) return null;
+                                return (
+                                    <button
+                                        key={`tool-${id}`}
+                                        onClick={() => setSelectedToolIds(prev => prev.filter(tid => tid !== id))}
+                                        className="inline-flex h-7 items-center gap-1.5 rounded-full border border-purple-200 bg-purple-50 px-3 text-[12px] font-medium text-purple-600 hover:bg-purple-100 transition-colors"
+                                    >
+                                        {tool.name}
+                                        <span className="material-symbols-outlined text-[14px]">close</span>
+                                    </button>
+                                );
+                            })}
                         </div>
                     </div>
 
@@ -195,7 +226,7 @@ export default function Home() {
                             className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 hover:text-primary transition-colors whitespace-nowrap"
                         >
                             <span className="material-symbols-outlined">sort</span>
-                            <span>Sort by: {sortLabels[sortBy]}</span>
+                            <span>Sort by: {sortLabels[sortBy] || 'Trending'}</span>
                             <span className="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
                         </button>
 
@@ -206,8 +237,8 @@ export default function Home() {
                                         key={option}
                                         onClick={() => handleSortChange(option)}
                                         className={`w-full px-4 py-2 text-left text-sm hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors ${sortBy === option
-                                                ? 'text-primary font-semibold'
-                                                : 'text-gray-700 dark:text-gray-300'
+                                            ? 'text-primary font-semibold'
+                                            : 'text-gray-700 dark:text-gray-300'
                                             }`}
                                     >
                                         {sortLabels[option]}

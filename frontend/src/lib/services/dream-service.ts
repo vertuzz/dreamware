@@ -1,11 +1,11 @@
 import api from '../api';
-import type { Dream, DreamCreate, Comment, CommentCreate } from '../types';
+import type { Dream, DreamCreate, Comment, CommentCreate, Tag, Tool } from '../types';
 
 export interface DreamQueryParams {
     skip?: number;
     limit?: number;
-    tool_id?: number;
-    tag_id?: number;
+    tool_id?: number | number[];
+    tag_id?: number | number[];
     tool?: string;
     tag?: string;
     search?: string;
@@ -73,5 +73,15 @@ export const dreamService = {
 
     unlikeComment: async (commentId: number): Promise<void> => {
         await api.delete(`/comments/${commentId}/like`);
+    },
+
+    getTags: async (): Promise<Tag[]> => {
+        const response = await api.get('/tags/');
+        return response.data;
+    },
+
+    getTools: async (): Promise<Tool[]> => {
+        const response = await api.get('/tools/');
+        return response.data;
     },
 };

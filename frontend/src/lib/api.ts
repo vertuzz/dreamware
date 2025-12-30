@@ -5,6 +5,11 @@ const api = axios.create({
     headers: {
         'Content-Type': 'application/json',
     },
+    paramsSerializer: {
+        // FastAPI expects repeated keys for arrays (tag_id=1&tag_id=2)
+        // instead of brackets (tag_id[]=1&tag_id[]=2)
+        indexes: null,
+    },
 });
 
 // Add a request interceptor to include the auth token

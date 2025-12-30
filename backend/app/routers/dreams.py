@@ -50,8 +50,8 @@ def dream_to_schema(dream: Dream, likes_count: int = 0, comments_count: int = 0)
 async def get_dreams(
     skip: int = 0,
     limit: int = 20,
-    tool_id: Optional[int] = None,
-    tag_id: Optional[int] = None,
+    tool_id: Optional[List[int]] = Query(None),
+    tag_id: Optional[List[int]] = Query(None),
     tool: Optional[str] = None,
     tag: Optional[str] = None,
     search: Optional[str] = None,
@@ -76,7 +76,7 @@ async def get_dreams(
         
     # 2. Apply Filters
     if tool_id:
-        query = query.filter(Tool.id == tool_id)
+        query = query.filter(Tool.id.in_(tool_id))
     elif tool:
         tool_names = [t.strip() for t in tool.split(",") if t.strip()]
         if len(tool_names) > 1:
@@ -85,7 +85,7 @@ async def get_dreams(
             query = query.filter(Tool.name.ilike(f"%{tool_names[0]}%"))
         
     if tag_id:
-        query = query.filter(Tag.id == tag_id)
+        query = query.filter(Tag.id.in_(tag_id))
     elif tag:
         tag_names = [t.strip() for t in tag.split(",") if t.strip()]
         if len(tag_names) > 1:
