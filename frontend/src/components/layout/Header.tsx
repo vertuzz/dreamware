@@ -1,10 +1,14 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '~/contexts/AuthContext';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
 }
 
 export default function Header({ onSearch }: HeaderProps) {
+  const { user } = useAuth();
+  const isLoggedIn = !!user;
+
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[var(--border)] bg-white/80 dark:bg-[var(--background)]/90 backdrop-blur-md">
       <div className="px-6 md:px-10 py-3 flex items-center justify-between gap-4">
@@ -65,7 +69,7 @@ export default function Header({ onSearch }: HeaderProps) {
 
           {/* CTA Button */}
           <Link
-            to="/dreams/create"
+            to={isLoggedIn ? "/dreams/create" : "/login"}
             className="hidden sm:flex items-center justify-center gap-2 h-10 px-5 bg-primary hover:bg-primary-dark text-white text-sm font-bold rounded-xl transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5"
           >
             <span className="material-symbols-outlined text-[20px]">add</span>
@@ -74,10 +78,14 @@ export default function Header({ onSearch }: HeaderProps) {
 
           {/* User Profile */}
           <Link
-            to="/profile"
+            to={isLoggedIn ? "/profile" : "/login"}
             className="size-10 rounded-full bg-gray-200 cursor-pointer overflow-hidden border-2 border-white dark:border-gray-700 shadow-sm hover:ring-2 hover:ring-primary hover:ring-offset-2 transition-all flex items-center justify-center"
           >
-            <span className="material-symbols-outlined text-gray-500">person</span>
+            {user?.avatar ? (
+              <img src={user.avatar} alt={user.username} className="w-full h-full object-cover" />
+            ) : (
+              <span className="material-symbols-outlined text-gray-500">person</span>
+            )}
           </Link>
         </div>
       </div>

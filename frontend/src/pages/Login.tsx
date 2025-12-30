@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useAuth } from '~/contexts/AuthContext';
 import { authService } from '~/lib/services/auth-service';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button } from '~/components/ui/button';
@@ -10,6 +11,7 @@ import { Github } from 'lucide-react';
 import Header from '~/components/layout/Header';
 
 export default function Login() {
+    const { login } = useAuth();
     const [searchParams] = useSearchParams();
     const initialTab = searchParams.get('mode') === 'signup' ? 'signup' : 'login';
     const [activeTab, setActiveTab] = useState(initialTab);
@@ -29,7 +31,7 @@ export default function Login() {
         e.preventDefault();
         setIsLoading(true);
         try {
-            await authService.login(loginData);
+            await login(loginData);
             navigate('/profile');
         } catch (err: any) {
             console.error(err);
@@ -44,8 +46,8 @@ export default function Login() {
         setIsLoading(true);
         try {
             await authService.signup(signupData);
-            // After signup, automatically log in
-            await authService.login({ username: signupData.username, password: signupData.password });
+            // After signup, automatically log in using context
+            await login({ username: signupData.username, password: signupData.password });
             navigate('/profile');
         } catch (err: any) {
             console.error(err);

@@ -1,40 +1,38 @@
 import { useEffect, useState } from 'react';
-import { authService } from '~/lib/services/auth-service';
+import { useAuth } from '~/contexts/AuthContext';
 import { dreamService } from '~/lib/services/dream-service';
-import type { User, Dream } from '~/lib/types';
+import type { Dream } from '~/lib/types';
 import DreamCard from '~/components/dreams/DreamCard';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { Button } from '~/components/ui/button';
 import { Badge } from '~/components/ui/badge';
 import { Github, Twitter, Linkedin, Edit2, LogOut, MapPin, Link as LinkIcon, Calendar } from 'lucide-react';
 import Header from '~/components/layout/Header';
+import { useNavigate } from 'react-router-dom';
 
 export default function Profile() {
-    const [user, setUser] = useState<User | null>(null);
+    const { user, logout, isLoading } = useAuth();
     const [dreams, setDreams] = useState<Dream[]>([]);
-    const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchUserData = async () => {
-            try {
-                const userData = await authService.getMe();
-                setUser(userData);
-
-                if (userData?.id) {
-                    const userDreams = await dreamService.getDreams({ creator_id: userData.id });
+        const fetchUserDreams = async () => {
+            if (user?.id) {
+                try {
+                    const userDreams = await dreamService.getDreams({ creator_id: user.id });
                     setDreams(userDreams);
+                } catch (err) {
+                    console.error('Failed to fetch user dreams:', err);
                 }
-            } catch (err) {
-                console.error('Failed to fetch profile data:', err);
-            } finally {
-                setLoading(false);
             }
         };
 
-        fetchUserData();
-    }, []);
+        if (user) {
+            fetchUserDreams();
+        }
+    }, [user]);
 
-    if (loading) {
+    if (isLoading) {
         return (
             <div className="flex flex-col min-h-screen">
                 <Header />
@@ -52,7 +50,7 @@ export default function Profile() {
                 <div className="flex-1 max-w-md mx-auto mt-20 text-center">
                     <h2 className="text-2xl font-bold mb-4 text-gray-900">Please login</h2>
                     <p className="text-gray-600 mb-6">You need to be authenticated to view your profile.</p>
-                    <Button onClick={() => window.location.href = '/login'}>Go to Login</Button>
+                    <Button onClick={() => navigate('/login')}>Go to Login</Button>
                 </div>
             </div>
         );
@@ -100,7 +98,7 @@ export default function Profile() {
                                         variant="ghost"
                                         size="sm"
                                         className="rounded-full text-gray-500 hover:text-red-600"
-                                        onClick={() => { authService.logout(); window.location.href = '/login'; }}
+                                        onClick={() => { logout(); navigate('/login'); }}
                                     >
                                         <LogOut size={16} /> Logout
                                     </Button>
@@ -173,7 +171,7 @@ export default function Profile() {
                             <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-gray-200">
                                 <h3 className="text-xl font-bold text-gray-900 mb-2">No dreams yet</h3>
                                 <p className="text-gray-500 mb-6">Start your journey by creating your first AI-powered app.</p>
-                                <Button onClick={() => window.location.href = '/dreams/create'}>Submit a Dream</Button>
+                                <Button onClick={() => navigate('/dreams/create')}>Submit a Dream</Button>
                             </div>
                         )}
                     </TabsContent>
