@@ -116,28 +116,34 @@ async def get_dreams(
         
         likes_count = func.count(distinct(Like.id))
         comments_count = func.count(distinct(Comment.id))
-        age_in_hours = func.extract('epoch', func.now() - Dream.created_at) / 3600
+        
+        # Handle SQLite vs Postgres for age calculation
+        if db.bind.dialect.name == "sqlite":
+            # julianday returns days, so multiply by 24 for hours
+            age_in_hours = (func.julianday('now') - func.julianday(Dream.created_at)) * 24
+        else:
+            age_in_hours = func.extract('epoch', func.now() - Dream.created_at) / 3600
         
         # Gravity algorithm
         trending_score = (likes_count + (comments_count * 2) + 1) / func.power(age_in_hours + 2, 1.8)
-        query = query.order_by(desc(trending_score))
+        query = query.order_by(desc(trending_score), desc(Dream.id))
         
     elif sort_by == "top_rated":
         from app.models import Review
         query = query.outerjoin(Dream.reviews)
         # Average score, default to 0 if no reviews
         avg_score = func.coalesce(func.avg(Review.score), 0)
-        query = query.order_by(desc(avg_score), desc(Dream.created_at))
+        query = query.order_by(desc(avg_score), desc(Dream.created_at), desc(Dream.id))
         
     elif sort_by == "likes":
         query = query.outerjoin(Dream.likes)
-        query = query.order_by(desc(func.count(distinct(Like.id))), desc(Dream.created_at))
+        query = query.order_by(desc(func.count(distinct(Like.id))), desc(Dream.created_at), desc(Dream.id))
         
     elif sort_by == "newest":
-        query = query.order_by(desc(Dream.created_at))
+        query = query.order_by(desc(Dream.created_at), desc(Dream.id))
     
     else: # Default fallback to created_at
-        query = query.order_by(desc(Dream.created_at))
+        query = query.order_by(desc(Dream.created_at), desc(Dream.id))
         
     query = query.offset(skip).limit(limit)
     result = await db.execute(query)
