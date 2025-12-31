@@ -149,17 +149,51 @@ interface CommentThreadProps {
 }
 
 function CommentThread({ comment, dreamId, onRefresh, depth }: CommentThreadProps) {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, user } = useAuth();
     const [replying, setReplying] = useState(false);
     const [replyContent, setReplyContent] = useState('');
     const [submittingReply, setSubmittingReply] = useState(false);
     const [collapsed, setCollapsed] = useState(false);
+
+    // State for editing
+    const [editing, setEditing] = useState(false);
+    const [editContent, setEditContent] = useState(comment.content);
+    const [submittingEdit, setSubmittingEdit] = useState(false);
 
     // State for optimistic UI on voting
     const [voteState, setVoteState] = useState({
         userVote: comment.user_vote || 0,
         score: comment.score || 0
     });
+
+    const isOwner = isAuthenticated && user?.id === comment.user_id;
+
+    const handleEditSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!editContent.trim()) return;
+
+        setSubmittingEdit(true);
+        try {
+            await api.patch(`/comments/${comment.id}`, { content: editContent.trim() });
+            setEditing(false);
+            await onRefresh();
+        } catch (error) {
+            console.error("Failed to edit comment", error);
+        } finally {
+            setSubmittingEdit(false);
+        }
+    };
+
+    const handleDelete = async () => {
+        if (!window.confirm("Are you sure you want to delete this comment?")) return;
+
+        try {
+            await api.delete(`/comments/${comment.id}`);
+            await onRefresh();
+        } catch (error) {
+            console.error("Failed to delete comment", error);
+        }
+    };
 
     const handleVote = async (value: number) => {
         if (!isAuthenticated) return;
@@ -285,9 +319,37 @@ function CommentThread({ comment, dreamId, onRefresh, depth }: CommentThreadProp
                         </button>
                     </div>
 
-                    <div className="text-sm text-gray-600 dark:text-gray-300 mb-2 whitespace-pre-wrap break-words">
-                        {comment.content}
-                    </div>
+                    {/* Comment Content or Edit Form */}
+                    {editing ? (
+                        <form onSubmit={handleEditSubmit} className="mb-2">
+                            <textarea
+                                value={editContent}
+                                onChange={(e) => setEditContent(e.target.value)}
+                                autoFocus
+                                className="w-full bg-white dark:bg-[var(--card)] border border-[var(--border)] rounded-lg p-3 focus:ring-2 focus:ring-primary focus:border-transparent text-sm min-h-[80px] resize-none"
+                            />
+                            <div className="flex justify-end gap-2 mt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => { setEditing(false); setEditContent(comment.content); }}
+                                    className="px-3 py-1.5 text-gray-500 text-sm font-medium hover:text-gray-700 dark:hover:text-gray-300"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={submittingEdit || !editContent.trim()}
+                                    className="px-3 py-1.5 bg-primary text-white rounded-lg text-sm font-bold hover:bg-primary-dark transition-colors disabled:opacity-50"
+                                >
+                                    {submittingEdit ? 'Saving...' : 'Save'}
+                                </button>
+                            </div>
+                        </form>
+                    ) : (
+                        <div className="text-sm text-gray-600 dark:text-gray-300 mb-2 whitespace-pre-wrap break-words">
+                            {comment.content}
+                        </div>
+                    )}
 
                     {/* Actions Row */}
                     <div className="flex items-center gap-4 select-none">
@@ -318,6 +380,25 @@ function CommentThread({ comment, dreamId, onRefresh, depth }: CommentThreadProp
                                 <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
                                 Reply
                             </button>
+                        )}
+
+                        {isOwner && !editing && (
+                            <>
+                                <button
+                                    onClick={() => setEditing(true)}
+                                    className="text-xs font-bold text-gray-500 hover:text-primary flex items-center gap-1"
+                                >
+                                    <span className="material-symbols-outlined text-[16px]">edit</span>
+                                    Edit
+                                </button>
+                                <button
+                                    onClick={handleDelete}
+                                    className="text-xs font-bold text-gray-500 hover:text-red-500 flex items-center gap-1"
+                                >
+                                    <span className="material-symbols-outlined text-[16px]">delete</span>
+                                    Delete
+                                </button>
+                            </>
                         )}
                     </div>
 
