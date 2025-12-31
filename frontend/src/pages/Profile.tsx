@@ -14,6 +14,7 @@ import { Input } from '~/components/ui/input';
 export default function Profile() {
     const { user, logout, isLoading } = useAuth();
     const [dreams, setDreams] = useState<Dream[]>([]);
+    const [likedDreams, setLikedDreams] = useState<Dream[]>([]);
     const [showApiKey, setShowApiKey] = useState(false);
     const [copied, setCopied] = useState(false);
     const navigate = useNavigate();
@@ -22,8 +23,12 @@ export default function Profile() {
         const fetchUserDreams = async () => {
             if (user?.id) {
                 try {
-                    const userDreams = await dreamService.getDreams({ creator_id: user.id });
+                    const [userDreams, userLikedDreams] = await Promise.all([
+                        dreamService.getDreams({ creator_id: user.id }),
+                        dreamService.getDreams({ liked_by_user_id: user.id })
+                    ]);
                     setDreams(userDreams);
+                    setLikedDreams(userLikedDreams);
                 } catch (err) {
                     console.error('Failed to fetch user dreams:', err);
                 }
@@ -215,7 +220,7 @@ export default function Profile() {
                             value="likes"
                             className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1 text-base font-semibold transition-all"
                         >
-                            Likes <span className="ml-2 text-sm text-gray-400 font-normal">0</span>
+                            Likes <span className="ml-2 text-sm text-gray-400 font-normal">{likedDreams.length}</span>
                         </TabsTrigger>
                     </TabsList>
 
@@ -243,10 +248,18 @@ export default function Profile() {
                     </TabsContent>
 
                     <TabsContent value="likes" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
-                        <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-gray-200">
-                            <h3 className="text-xl font-bold text-gray-900 mb-2">No likes yet</h3>
-                            <p className="text-gray-500">Dreams you like will appear here.</p>
-                        </div>
+                        {likedDreams.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {likedDreams.map((dream) => (
+                                    <DreamCard key={dream.id} dream={dream} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-gray-200">
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">No likes yet</h3>
+                                <p className="text-gray-500">Dreams you like will appear here.</p>
+                            </div>
+                        )}
                     </TabsContent>
                 </Tabs>
             </main>

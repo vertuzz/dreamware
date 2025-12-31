@@ -11,6 +11,7 @@ export interface DreamQueryParams {
     search?: string;
     status?: 'Concept' | 'WIP' | 'Live';
     creator_id?: number;
+    liked_by_user_id?: number;
     sort_by?: 'trending' | 'newest' | 'top_rated' | 'likes';
 }
 

@@ -14,6 +14,7 @@ export default function UserPage() {
     const { username } = useParams<{ username: string }>();
     const [user, setUser] = useState<User | null>(null);
     const [dreams, setDreams] = useState<Dream[]>([]);
+    const [likedDreams, setLikedDreams] = useState<Dream[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -27,8 +28,12 @@ export default function UserPage() {
                 setUser(userData);
 
                 if (userData?.id) {
-                    const userDreams = await dreamService.getDreams({ creator_id: userData.id });
+                    const [userDreams, userLikedDreams] = await Promise.all([
+                        dreamService.getDreams({ creator_id: userData.id }),
+                        dreamService.getDreams({ liked_by_user_id: userData.id })
+                    ]);
                     setDreams(userDreams);
+                    setLikedDreams(userLikedDreams);
                 }
             } catch (err) {
                 console.error('Failed to fetch user data:', err);
@@ -153,6 +158,12 @@ export default function UserPage() {
                         >
                             Collections <span className="ml-2 text-sm text-gray-400 font-normal">0</span>
                         </TabsTrigger>
+                        <TabsTrigger
+                            value="likes"
+                            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1 text-base font-semibold"
+                        >
+                            Likes <span className="ml-2 text-sm text-gray-400 font-normal">{likedDreams.length}</span>
+                        </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="dreams" className="pt-2">
@@ -175,6 +186,21 @@ export default function UserPage() {
                             <h3 className="text-xl font-bold text-gray-900 mb-2">No collections yet</h3>
                             <p className="text-gray-500">@{user.username} hasn't created any public collections yet.</p>
                         </div>
+                    </TabsContent>
+
+                    <TabsContent value="likes" className="pt-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        {likedDreams.length > 0 ? (
+                            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {likedDreams.map((dream) => (
+                                    <DreamCard key={dream.id} dream={dream} />
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="bg-white rounded-3xl p-12 text-center border border-dashed border-gray-200">
+                                <h3 className="text-xl font-bold text-gray-900 mb-2">No likes yet</h3>
+                                <p className="text-gray-500">@{user.username} hasn't liked any dreams yet.</p>
+                            </div>
+                        )}
                     </TabsContent>
                 </Tabs>
             </main>

@@ -67,6 +67,7 @@ async def get_dreams(
     search: Optional[str] = None,
     status: Optional[DreamStatus] = None,
     creator_id: Optional[int] = None,
+    liked_by_user_id: Optional[int] = None,
     sort_by: str = Query("trending", enum=["trending", "newest", "top_rated", "likes"]),
     current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db)
@@ -116,6 +117,9 @@ async def get_dreams(
 
     if creator_id:
         query = query.filter(Dream.creator_id == creator_id)
+    
+    if liked_by_user_id:
+        query = query.filter(Dream.likes.any(Like.user_id == liked_by_user_id))
     
     # 3. Apply Sorting & Grouping
     # We always group by Dream.id to avoid duplicates from many-to-many joins
