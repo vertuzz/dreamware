@@ -4,6 +4,7 @@ import type { Dream } from '~/lib/types';
 interface DreamCardProps {
   dream: Dream;
   aspectRatio?: 'square' | 'video' | 'portrait' | 'landscape';
+  onLike?: (dream: Dream) => void;
 }
 
 // Aspect ratio classes for masonry variety
@@ -61,7 +62,7 @@ function formatCount(count: number | undefined): string {
 // Default placeholder image for dreams without media
 const placeholderImage = '/placeholder-dream.png';
 
-export default function DreamCard({ dream, aspectRatio = 'landscape' }: DreamCardProps) {
+export default function DreamCard({ dream, aspectRatio = 'landscape', onLike }: DreamCardProps) {
   // Get the first media image or use a placeholder
   const imageUrl = dream.media?.[0]?.media_url || placeholderImage;
 
@@ -117,10 +118,20 @@ export default function DreamCard({ dream, aspectRatio = 'landscape' }: DreamCar
 
               {/* Stats */}
               <div className="flex items-center gap-3 text-gray-400">
-                <div className="flex items-center gap-1 hover:text-red-500 transition-colors">
-                  <span className="material-symbols-outlined text-[16px]">favorite</span>
+                <button
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onLike?.(dream);
+                  }}
+                  className={`flex items-center gap-1 transition-colors ${dream.is_liked
+                    ? 'text-rose-500 hover:text-rose-600'
+                    : 'hover:text-red-500'
+                    }`}
+                >
+                  <span className={`material-symbols-outlined text-[16px] ${dream.is_liked ? 'filled' : ''}`}>favorite</span>
                   <span className="text-xs font-medium">{formatCount(dream.likes_count)}</span>
-                </div>
+                </button>
                 <div className="flex items-center gap-1 hover:text-primary transition-colors">
                   <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
                   <span className="text-xs font-medium">{formatCount(dream.comments_count)}</span>

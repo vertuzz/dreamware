@@ -254,6 +254,41 @@ export default function Home() {
         likes: 'Most Liked',
     };
 
+    const handleLike = async (dream: Dream) => {
+        // Optimistic update
+        setDreams(prev => prev.map(d => {
+            if (d.id === dream.id) {
+                return {
+                    ...d,
+                    is_liked: !d.is_liked,
+                    likes_count: (d.likes_count || 0) + (d.is_liked ? -1 : 1)
+                };
+            }
+            return d;
+        }));
+
+        try {
+            if (dream.is_liked) {
+                await dreamService.unlikeDream(dream.id);
+            } else {
+                await dreamService.likeDream(dream.id);
+            }
+        } catch (err) {
+            console.error('Failed to toggle like:', err);
+            // Revert on failure
+            setDreams(prev => prev.map(d => {
+                if (d.id === dream.id) {
+                    return {
+                        ...d,
+                        is_liked: dream.is_liked,
+                        likes_count: dream.likes_count
+                    };
+                }
+                return d;
+            }));
+        }
+    };
+
     return (
         <div className="relative flex min-h-screen w-full flex-col overflow-x-hidden">
             {/* Header */}
@@ -381,6 +416,7 @@ export default function Home() {
                                         <DreamCard
                                             dream={dream}
                                             aspectRatio={aspectRatios[index % aspectRatios.length]}
+                                            onLike={handleLike}
                                         />
                                     </div>
                                 );
@@ -390,6 +426,7 @@ export default function Home() {
                                         key={dream.id}
                                         dream={dream}
                                         aspectRatio={aspectRatios[index % aspectRatios.length]}
+                                        onLike={handleLike}
                                     />
                                 );
                             }

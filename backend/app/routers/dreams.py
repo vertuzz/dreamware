@@ -7,7 +7,7 @@ from typing import List, Optional
 from app.database import get_db
 from app.models import Dream, User, Tool, Tag, DreamMedia, DreamStatus, Like, Comment, Review
 from app.schemas import schemas
-from app.routers.auth import get_current_user
+from app.routers.auth import get_current_user, get_current_user_optional
 from app.utils import slugify, generate_unique_slug
 
 router = APIRouter()
@@ -24,8 +24,15 @@ async def get_dream_counts(db: AsyncSession, dream_id: int) -> tuple[int, int]:
     return likes_result.scalar() or 0, comments_result.scalar() or 0
 
 
-def dream_to_schema(dream: Dream, likes_count: int = 0, comments_count: int = 0) -> schemas.Dream:
+def dream_to_schema(
+    dream: Dream, 
+    creator: Optional[schemas.DreamCreator] = None,
+    likes_count: int = 0, 
+    comments_count: int = 0,
+    is_liked: bool = False
+) -> schemas.Dream:
     """Convert Dream ORM object to dict with computed fields"""
+    # Create the schema object directly
     return {
         "id": dream.id,
         "title": dream.title,
@@ -37,16 +44,16 @@ def dream_to_schema(dream: Dream, likes_count: int = 0, comments_count: int = 0)
         "youtube_url": dream.youtube_url,
         "is_agent_submitted": dream.is_agent_submitted,
         "creator_id": dream.creator_id,
-        "creator_id": dream.creator_id,
         "parent_dream_id": dream.parent_dream_id,
         "created_at": dream.created_at,
         "slug": dream.slug,
         "media": dream.media,
         "tools": dream.tools,
         "tags": dream.tags,
-        "creator": dream.creator,
+        "creator": creator or dream.creator,
         "likes_count": likes_count,
         "comments_count": comments_count,
+        "is_liked": is_liked,
     }
 
 @router.get("/", response_model=List[schemas.Dream])
@@ -61,6 +68,7 @@ async def get_dreams(
     status: Optional[DreamStatus] = None,
     creator_id: Optional[int] = None,
     sort_by: str = Query("trending", enum=["trending", "newest", "top_rated", "likes"]),
+    current_user: Optional[User] = Depends(get_current_user_optional),
     db: AsyncSession = Depends(get_db)
 ):
     # Base query with eager loading of media, tools, tags and creator
@@ -175,12 +183,24 @@ async def get_dreams(
         likes_map = {}
         comments_map = {}
     
+    # Get liked status if user is logged in
+    liked_dream_ids = set()
+    if current_user:
+        if dream_ids:
+            likes_q = await db.execute(
+                select(Like.dream_id)
+                .filter(Like.dream_id.in_(dream_ids))
+                .filter(Like.user_id == current_user.id)
+            )
+            liked_dream_ids = set(likes_q.scalars().all())
+
     # Convert to response with counts
     return [
         dream_to_schema(
             dream, 
             likes_count=likes_map.get(dream.id, 0),
-            comments_count=comments_map.get(dream.id, 0)
+            comments_count=comments_map.get(dream.id, 0),
+            is_liked=(dream.id in liked_dream_ids)
         )
         for dream in dreams
     ]
@@ -236,10 +256,14 @@ async def create_dream(
         .filter(Dream.id == db_dream.id)
     )
     dream = result.scalars().first()
-    return dream_to_schema(dream, likes_count=0, comments_count=0)
+    return dream_to_schema(dream, likes_count=0, comments_count=0, is_liked=False)
 
 @router.get("/{dream_identifier}", response_model=schemas.Dream)
-async def get_dream(dream_identifier: str, db: AsyncSession = Depends(get_db)):
+async def get_dream(
+    dream_identifier: str, 
+    db: AsyncSession = Depends(get_db),
+    current_user: Optional[User] = Depends(get_current_user_optional)
+):
     # Try to parse as integer ID first
     dream_id = None
     if dream_identifier.isdigit():
@@ -258,7 +282,16 @@ async def get_dream(dream_identifier: str, db: AsyncSession = Depends(get_db)):
     # Get counts
     likes_count, comments_count = await get_dream_counts(db, dream.id)
     
-    return dream_to_schema(dream, likes_count=likes_count, comments_count=comments_count)
+    # Check if liked
+    is_liked = False
+    if current_user:
+        result_like = await db.execute(
+            select(Like).filter(Like.dream_id == dream.id, Like.user_id == current_user.id)
+        )
+        if result_like.scalars().first():
+            is_liked = True
+
+    return dream_to_schema(dream, likes_count=likes_count, comments_count=comments_count, is_liked=is_liked)
 
 @router.patch("/{dream_id}", response_model=schemas.Dream)
 async def update_dream(
@@ -295,7 +328,14 @@ async def update_dream(
     # Get counts
     likes_count, comments_count = await get_dream_counts(db, dream_id)
     
-    return dream_to_schema(dream, likes_count=likes_count, comments_count=comments_count)
+    return dream_to_schema(dream, likes_count=likes_count, comments_count=comments_count, is_liked=False) # User is creator, usually creators don't like their own dreams effectively or we can check. For now False or check.
+    # Actually creator can like their own dream.
+    # Let's check.
+    result_like = await db.execute(
+        select(Like).filter(Like.dream_id == dream.id, Like.user_id == current_user.id)
+    )
+    is_liked = result_like.scalars().first() is not None
+    return dream_to_schema(dream, likes_count=likes_count, comments_count=comments_count, is_liked=is_liked)
 
 @router.post("/{dream_id}/fork", response_model=schemas.Dream)
 async def fork_dream(
@@ -341,7 +381,7 @@ async def fork_dream(
         .filter(Dream.id == db_dream.id)
     )
     dream = result.scalars().first()
-    return dream_to_schema(dream, likes_count=0, comments_count=0)
+    return dream_to_schema(dream, likes_count=0, comments_count=0, is_liked=False)
 
 @router.post("/{dream_id}/media", response_model=schemas.DreamMedia)
 async def add_dream_media(

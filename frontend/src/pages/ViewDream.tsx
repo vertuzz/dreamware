@@ -102,6 +102,7 @@ export default function ViewDream() {
             const dreamData = await dreamService.getDream(slug);
             setDream(dreamData);
             setLikesCount(dreamData.likes_count || 0);
+            setIsLiked(!!dreamData.is_liked);
 
             // Fetch comments using the retrieved ID
             const commentsData = await dreamService.getComments(dreamData.id);

@@ -37,6 +37,7 @@ export interface Dream {
     media?: DreamMedia[];
     likes_count?: number;
     comments_count?: number;
+    is_liked?: boolean;
 }
 
 export interface Tool {

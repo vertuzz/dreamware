@@ -107,6 +107,7 @@ class Dream(DreamBase):
     creator: Optional[DreamCreator] = None
     likes_count: int = 0
     comments_count: int = 0
+    is_liked: bool = False
     model_config = ConfigDict(from_attributes=True)
 
 # Implementation
