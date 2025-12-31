@@ -1,4 +1,5 @@
 import type { Tool, Tag } from '~/lib/types';
+import MultiSelect from '~/components/common/MultiSelect';
 
 interface DetailsSectionProps {
     prdText: string;
@@ -21,8 +22,23 @@ export default function DetailsSection({
     availableTools,
     availableTags
 }: DetailsSectionProps) {
-    const removeTool = (id: number) => setSelectedTools(selectedTools.filter(t => t.id !== id));
-    const removeTag = (id: number) => setSelectedTags(selectedTags.filter(t => t.id !== id));
+    const handleToolsChange = (ids: number[]) => {
+        const newTools = availableTools.filter(t => ids.includes(t.id));
+        setSelectedTools(newTools);
+    };
+
+    const handleTagsChange = (ids: number[]) => {
+        const newTags = availableTags.filter(t => ids.includes(t.id));
+        setSelectedTags(newTags);
+    };
+
+    const removeTool = (id: number) => {
+        setSelectedTools(selectedTools.filter(t => t.id !== id));
+    };
+
+    const removeTag = (id: number) => {
+        setSelectedTags(selectedTags.filter(t => t.id !== id));
+    };
 
     return (
         <section className="bg-white dark:bg-[#1E2330] rounded-xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-800">
@@ -52,60 +68,42 @@ export default function DetailsSection({
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="flex flex-col gap-3">
                         <label className="text-slate-700 dark:text-slate-300 text-sm font-semibold">Tech Stack</label>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             {selectedTools.map(tool => (
                                 <span key={tool.id} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-primary text-white text-xs font-medium border border-transparent shadow-sm">
                                     {tool.name}
                                     <button type="button" onClick={() => removeTool(tool.id)} className="material-symbols-outlined text-[14px] hover:text-white/80 transition-colors">close</button>
                                 </span>
                             ))}
-                            <div className="relative group/menu">
-                                <button type="button" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium border border-slate-200 dark:border-slate-700 shadow-sm hover:border-primary hover:text-primary transition-colors">
-                                    <span className="material-symbols-outlined text-[14px]">add</span>
-                                    Add Tool
-                                </button>
-                                <div className="invisible group-hover/menu:visible absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-2 max-h-48 overflow-y-auto z-10">
-                                    {availableTools.filter(t => !selectedTools.find(st => st.id === t.id)).map(tool => (
-                                        <button
-                                            key={tool.id}
-                                            type="button"
-                                            onClick={() => setSelectedTools([...selectedTools, tool])}
-                                            className="w-full px-4 py-2 text-left text-xs hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
-                                        >
-                                            {tool.name}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+                            <MultiSelect
+                                label="Tools"
+                                icon="build"
+                                placeholder="Search tools..."
+                                items={availableTools}
+                                selectedIds={selectedTools.map(t => t.id)}
+                                onChange={handleToolsChange}
+                                color="primary"
+                            />
                         </div>
                     </div>
                     <div className="flex flex-col gap-3">
                         <label className="text-slate-700 dark:text-slate-300 text-sm font-semibold">Aesthetic Tags</label>
-                        <div className="flex flex-wrap gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                             {selectedTags.map(tag => (
                                 <span key={tag.id} className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-xs font-medium border border-transparent">
                                     {tag.name}
                                     <button type="button" onClick={() => removeTag(tag.id)} className="material-symbols-outlined text-[14px] hover:opacity-70 transition-opacity">close</button>
                                 </span>
                             ))}
-                            <div className="relative group/menu">
-                                <button type="button" className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-medium border border-slate-200 dark:border-slate-700 shadow-sm hover:border-primary hover:text-primary transition-colors">
-                                    <span className="material-symbols-outlined text-[14px]">add</span>
-                                    Add Tag
-                                </button>
-                                <div className="invisible group-hover/menu:visible absolute bottom-full left-0 mb-2 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-100 dark:border-slate-700 py-2 max-h-48 overflow-y-auto z-10">
-                                    {availableTags.filter(t => !selectedTags.find(st => st.id === t.id)).map(tag => (
-                                        <button
-                                            key={tag.id}
-                                            type="button"
-                                            onClick={() => setSelectedTags([...selectedTags, tag])}
-                                            className="w-full px-4 py-2 text-left text-xs hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300"
-                                        >
-                                            {tag.name}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
+                            <MultiSelect
+                                label="Tags"
+                                icon="sell"
+                                placeholder="Search tags..."
+                                items={availableTags}
+                                selectedIds={selectedTags.map(t => t.id)}
+                                onChange={handleTagsChange}
+                                color="purple"
+                            />
                         </div>
                     </div>
                 </div>
@@ -113,3 +111,4 @@ export default function DetailsSection({
         </section>
     );
 }
+
