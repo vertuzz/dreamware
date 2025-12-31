@@ -10,6 +10,7 @@ import {
     DreamPromptSection,
     DreamTools,
 } from '~/components/dreams';
+import { Breadcrumbs } from '~/components/common/Breadcrumbs';
 
 // Helper to format date
 function formatDate(dateString: string): string {
@@ -164,21 +165,17 @@ export default function ViewDream() {
 
             <main className="flex-1 w-full max-w-[1440px] mx-auto px-4 md:px-8 lg:px-12 py-8">
                 {/* Breadcrumbs */}
-                <nav className="flex flex-wrap items-center gap-2 mb-8 text-sm">
-                    <Link to="/" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">Home</Link>
-                    <span className="text-gray-300 dark:text-gray-600">/</span>
-                    <Link to="/" className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">Marketplace</Link>
-                    {dream.tags && dream.tags.length > 0 && (
-                        <>
-                            <span className="text-gray-300 dark:text-gray-600">/</span>
-                            <Link to={`/?tag=${dream.tags[0].name}`} className="text-gray-500 dark:text-gray-400 hover:text-primary transition-colors">
-                                {dream.tags[0].name}
-                            </Link>
-                        </>
-                    )}
-                    <span className="text-gray-300 dark:text-gray-600">/</span>
-                    <span className="text-[var(--foreground)] font-medium">{dream.title}</span>
-                </nav>
+                {/* Breadcrumbs */}
+                <Breadcrumbs
+                    items={[
+                        { label: 'Home', to: '/' },
+                        ...(dream.tags && dream.tags.length > 0 ? [{
+                            label: dream.tags[0].name,
+                            to: `/?tag_id=${dream.tags[0].id}`
+                        }] : []),
+                        { label: dream.title }
+                    ]}
+                />
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
                     {/* LEFT COLUMN: Content (8 cols) */}
