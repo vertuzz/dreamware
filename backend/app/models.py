@@ -138,6 +138,7 @@ class Dream(Base):
     app_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     youtube_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True)
     is_agent_submitted: Mapped[bool] = mapped_column(Boolean, default=False)
+    slug: Mapped[str] = mapped_column(String(255), unique=True, index=True, nullable=False)
     
     # Lineage
     parent_dream_id: Mapped[Optional[int]] = mapped_column(ForeignKey("dreams.id"), nullable=True, index=True)

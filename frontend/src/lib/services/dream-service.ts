@@ -27,7 +27,7 @@ export const dreamService = {
         return response.data;
     },
 
-    getDream: async (id: number): Promise<Dream> => {
+    getDream: async (id: number | string): Promise<Dream> => {
         const response = await api.get(`/dreams/${id}`);
         return response.data;
     },

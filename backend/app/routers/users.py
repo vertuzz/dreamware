@@ -11,10 +11,15 @@ from app.routers.auth import get_current_user
 
 router = APIRouter()
 
-@router.get("/{user_id}", response_model=schemas.UserPublic)
-async def get_user(user_id: int, db: AsyncSession = Depends(get_db)):
+@router.get("/{user_identifier}", response_model=schemas.UserPublic)
+async def get_user(user_identifier: str, db: AsyncSession = Depends(get_db)):
+    if user_identifier.isdigit():
+        query = select(User).where(User.id == int(user_identifier))
+    else:
+        query = select(User).where(User.username == user_identifier)
+        
     result = await db.execute(
-        select(User).options(selectinload(User.links)).filter(User.id == user_id)
+        query.options(selectinload(User.links))
     )
     user = result.scalars().first()
     if user is None:

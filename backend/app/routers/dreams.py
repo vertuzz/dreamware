@@ -8,6 +8,7 @@ from app.database import get_db
 from app.models import Dream, User, Tool, Tag, DreamMedia, DreamStatus, Like, Comment, Review
 from app.schemas import schemas
 from app.routers.auth import get_current_user
+from app.utils import slugify, generate_unique_slug
 
 router = APIRouter()
 
@@ -36,8 +37,10 @@ def dream_to_schema(dream: Dream, likes_count: int = 0, comments_count: int = 0)
         "youtube_url": dream.youtube_url,
         "is_agent_submitted": dream.is_agent_submitted,
         "creator_id": dream.creator_id,
+        "creator_id": dream.creator_id,
         "parent_dream_id": dream.parent_dream_id,
         "created_at": dream.created_at,
+        "slug": dream.slug,
         "media": dream.media,
         "tools": dream.tools,
         "tags": dream.tags,
@@ -188,6 +191,18 @@ async def create_dream(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db)
 ):
+    
+    # Generate slug
+    base_slug = slugify(dream_in.title)
+    slug = base_slug
+    
+    # Check for uniqueness (simple loop for now, ideally handle with DB constraint exception)
+    # Since we are in async, we can do a check.
+    # Note: efficient way is to catch IntegrityError but for user feedback check is okay.
+    existing = await db.execute(select(Dream).filter(Dream.slug == slug))
+    if existing.scalar_one_or_none():
+        slug = generate_unique_slug(base_slug)
+
     db_dream = Dream(
         creator_id=current_user.id,
         title=dream_in.title,
@@ -198,7 +213,8 @@ async def create_dream(
         app_url=dream_in.app_url,
         youtube_url=dream_in.youtube_url,
         is_agent_submitted=dream_in.is_agent_submitted,
-        parent_dream_id=dream_in.parent_dream_id
+        parent_dream_id=dream_in.parent_dream_id,
+        slug=slug
     )
     
     # Add tools and tags
@@ -222,19 +238,25 @@ async def create_dream(
     dream = result.scalars().first()
     return dream_to_schema(dream, likes_count=0, comments_count=0)
 
-@router.get("/{dream_id}", response_model=schemas.Dream)
-async def get_dream(dream_id: int, db: AsyncSession = Depends(get_db)):
+@router.get("/{dream_identifier}", response_model=schemas.Dream)
+async def get_dream(dream_identifier: str, db: AsyncSession = Depends(get_db)):
+    # Try to parse as integer ID first
+    dream_id = None
+    if dream_identifier.isdigit():
+        dream_id = int(dream_identifier)
+        query = select(Dream).filter(Dream.id == dream_id)
+    else:
+        query = select(Dream).filter(Dream.slug == dream_identifier)
+
     result = await db.execute(
-        select(Dream)
-        .options(selectinload(Dream.tools), selectinload(Dream.tags), selectinload(Dream.media), selectinload(Dream.creator))
-        .filter(Dream.id == dream_id)
+        query.options(selectinload(Dream.tools), selectinload(Dream.tags), selectinload(Dream.media), selectinload(Dream.creator))
     )
     dream = result.scalars().first()
     if not dream:
         raise HTTPException(status_code=404, detail="Dream not found")
     
     # Get counts
-    likes_count, comments_count = await get_dream_counts(db, dream_id)
+    likes_count, comments_count = await get_dream_counts(db, dream.id)
     
     return dream_to_schema(dream, likes_count=likes_count, comments_count=comments_count)
 
@@ -290,6 +312,10 @@ async def fork_dream(
     if not parent_dream:
         raise HTTPException(status_code=404, detail="Parent dream not found")
     
+    # Generate slug for fork
+    base_slug = slugify(f"{parent_dream.title}-fork")
+    slug = generate_unique_slug(base_slug) # Always unique for forks likely
+
     # Simple fork: copy title and prompt and set parent
     db_dream = Dream(
         creator_id=current_user.id,
@@ -298,7 +324,8 @@ async def fork_dream(
         prd_text=parent_dream.prd_text,
         extra_specs=parent_dream.extra_specs,
         status=DreamStatus.CONCEPT,
-        parent_dream_id=parent_dream.id
+        parent_dream_id=parent_dream.id,
+        slug=slug
     )
     
     # Inherit tools and tags? PRD doesn't specify, but often useful

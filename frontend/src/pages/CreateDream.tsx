@@ -104,7 +104,7 @@ export default function CreateDream() {
             }
 
             // 3. Redirect to the new dream page
-            navigate(`/dreams/${newDream.id}`);
+            navigate(`/dreams/${newDream.slug}`);
         } catch (err: any) {
             console.error('Submission failed:', err);
             setError(err.response?.data?.detail || 'Something went wrong during submission. Please try again.');

@@ -10,35 +10,35 @@ interface DreamActionPanelProps {
 }
 
 const statusConfig = {
-    Live: { 
-        bg: 'bg-emerald-50 dark:bg-emerald-900/20', 
-        border: 'border-emerald-100 dark:border-emerald-900/50', 
-        text: 'text-emerald-700 dark:text-emerald-400', 
-        dot: 'bg-emerald-500', 
-        label: 'Live' 
+    Live: {
+        bg: 'bg-emerald-50 dark:bg-emerald-900/20',
+        border: 'border-emerald-100 dark:border-emerald-900/50',
+        text: 'text-emerald-700 dark:text-emerald-400',
+        dot: 'bg-emerald-500',
+        label: 'Live'
     },
-    WIP: { 
-        bg: 'bg-amber-50 dark:bg-amber-900/20', 
-        border: 'border-amber-100 dark:border-amber-900/50', 
-        text: 'text-amber-700 dark:text-amber-400', 
-        dot: 'bg-amber-500', 
-        label: 'Work in Progress' 
+    WIP: {
+        bg: 'bg-amber-50 dark:bg-amber-900/20',
+        border: 'border-amber-100 dark:border-amber-900/50',
+        text: 'text-amber-700 dark:text-amber-400',
+        dot: 'bg-amber-500',
+        label: 'Work in Progress'
     },
-    Concept: { 
-        bg: 'bg-blue-50 dark:bg-blue-900/20', 
-        border: 'border-blue-100 dark:border-blue-900/50', 
-        text: 'text-blue-700 dark:text-blue-400', 
-        dot: 'bg-blue-500', 
-        label: 'Concept' 
+    Concept: {
+        bg: 'bg-blue-50 dark:bg-blue-900/20',
+        border: 'border-blue-100 dark:border-blue-900/50',
+        text: 'text-blue-700 dark:text-blue-400',
+        dot: 'bg-blue-500',
+        label: 'Concept'
     },
 };
 
-export default function DreamActionPanel({ 
-    dream, 
-    likesCount, 
-    isLiked, 
-    onLike, 
-    onShare 
+export default function DreamActionPanel({
+    dream,
+    likesCount,
+    isLiked,
+    onLike,
+    onShare
 }: DreamActionPanelProps) {
     const status = statusConfig[dream.status] || statusConfig.Concept;
 
@@ -103,7 +103,7 @@ export default function DreamActionPanel({
 
                 {/* Creator Mini Profile */}
                 {dream.creator && (
-                    <Link to={`/users/${dream.creator.id}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
+                    <Link to={`/users/${dream.creator.username}`} className="flex items-center gap-3 hover:opacity-80 transition-opacity">
                         <div className="size-12 rounded-full border-2 border-white dark:border-gray-700 shadow-sm overflow-hidden bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
                             {dream.creator.avatar ? (
                                 <img src={dream.creator.avatar} alt={dream.creator.username} className="w-full h-full object-cover" />
@@ -115,7 +115,7 @@ export default function DreamActionPanel({
                             <p className="text-xs text-gray-500 dark:text-gray-400">Created by</p>
                             <p className="font-bold text-[var(--foreground)] truncate">@{dream.creator.username}</p>
                         </div>
-                        <button 
+                        <button
                             onClick={(e) => e.preventDefault()}
                             className="text-xs font-bold text-primary hover:text-primary-dark dark:text-blue-400 dark:hover:text-blue-300"
                         >

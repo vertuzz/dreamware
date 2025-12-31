@@ -68,15 +68,15 @@ const placeholderImages = [
 
 export default function DreamCard({ dream, aspectRatio = 'landscape' }: DreamCardProps) {
   // Get the first media image or use a placeholder
-  const imageUrl = dream.media?.[0]?.media_url || 
+  const imageUrl = dream.media?.[0]?.media_url ||
     placeholderImages[dream.id % placeholderImages.length];
-  
+
   const creatorName = dream.creator?.username || `user_${dream.creator_id}`;
   const creatorAvatar = dream.creator?.avatar;
 
   return (
     <div className="break-inside-avoid mb-6 group cursor-pointer">
-      <Link to={`/dreams/${dream.id}`}>
+      <Link to={`/dreams/${dream.slug || dream.id}`}>
         <div className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-700">
           {/* Image Section */}
           <div className={`relative ${aspectRatioClasses[aspectRatio]} w-full overflow-hidden`}>
@@ -104,7 +104,7 @@ export default function DreamCard({ dream, aspectRatio = 'landscape' }: DreamCar
             {/* Footer */}
             <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-3 mt-2">
               {/* Creator Info */}
-              <div className="flex items-center gap-2">
+              <Link to={`/users/${creatorName}`} className="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full pr-2 transition-colors" onClick={(e) => e.stopPropagation()}>
                 {creatorAvatar ? (
                   <img
                     src={creatorAvatar}
@@ -116,10 +116,10 @@ export default function DreamCard({ dream, aspectRatio = 'landscape' }: DreamCar
                     {creatorName.charAt(0).toUpperCase()}
                   </div>
                 )}
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-300">
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-300 hover:text-primary transition-colors">
                   @{creatorName}
                 </span>
-              </div>
+              </Link>
 
               {/* Stats */}
               <div className="flex items-center gap-3 text-gray-400">

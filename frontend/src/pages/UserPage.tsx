@@ -11,7 +11,7 @@ import { Github, Twitter, Linkedin, MapPin, Link as LinkIcon, Calendar, UserPlus
 import Header from '~/components/layout/Header';
 
 export default function UserPage() {
-    const { userId } = useParams<{ userId: string }>();
+    const { username } = useParams<{ username: string }>();
     const [user, setUser] = useState<User | null>(null);
     const [dreams, setDreams] = useState<Dream[]>([]);
     const [loading, setLoading] = useState(true);
@@ -19,11 +19,11 @@ export default function UserPage() {
 
     useEffect(() => {
         const fetchUserData = async () => {
-            if (!userId) return;
+            if (!username) return;
 
             try {
                 setLoading(true);
-                const userData = await userService.getUser(userId);
+                const userData = await userService.getUser(username);
                 setUser(userData);
 
                 if (userData?.id) {
@@ -39,7 +39,7 @@ export default function UserPage() {
         };
 
         fetchUserData();
-    }, [userId]);
+    }, [username]);
 
     if (loading) {
         return (

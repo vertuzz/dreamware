@@ -12,6 +12,7 @@ from sqlalchemy import select
 from app.database import AsyncSessionLocal, engine
 from app.models import Tool, Tag, User, Dream, DreamMedia, Comment, Like, DreamStatus
 from app.core.security import get_password_hash, generate_api_key
+from app.utils import slugify
 
 TOOLS = [
     "Cursor", "Windsurf", "Trae", "PearAI", "Replit Agent", "v0", "Bolt.new", 
@@ -170,7 +171,8 @@ async def seed_data():
                     prompt_text=dream_data["description"],
                     status=dream_data["status"],
                     app_url=dream_data.get("app_url"),
-                    is_agent_submitted=dream_data.get("is_agent_submitted", False)
+                    is_agent_submitted=dream_data.get("is_agent_submitted", False),
+                    slug=slugify(dream_data["title"])
                 )
                 
                 # Add tags

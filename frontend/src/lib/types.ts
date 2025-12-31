@@ -19,6 +19,7 @@ export interface DreamCreator {
 
 export interface Dream {
     id: number;
+    slug: string;
     title: string;
     prompt_text?: string;
     prd_text?: string;

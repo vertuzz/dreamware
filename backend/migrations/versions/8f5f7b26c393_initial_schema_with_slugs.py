@@ -1,8 +1,8 @@
-"""initial dreamware schema
+"""Initial schema with slugs
 
-Revision ID: 0922b5a93c22
+Revision ID: 8f5f7b26c393
 Revises: 
-Create Date: 2025-12-28 20:50:10.054261
+Create Date: 2025-12-31 13:06:22.311782
 
 """
 from typing import Sequence, Union
@@ -12,7 +12,7 @@ import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
 # revision identifiers, used by Alembic.
-revision: str = '0922b5a93c22'
+revision: str = '8f5f7b26c393'
 down_revision: Union[str, Sequence[str], None] = None
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
@@ -44,8 +44,10 @@ def upgrade() -> None:
     sa.Column('hashed_password', sa.String(length=255), nullable=True),
     sa.Column('google_id', sa.String(length=100), nullable=True),
     sa.Column('github_id', sa.String(length=100), nullable=True),
+    sa.Column('api_key', sa.String(length=255), nullable=True),
     sa.PrimaryKeyConstraint('id')
     )
+    op.create_index(op.f('ix_users_api_key'), 'users', ['api_key'], unique=True)
     op.create_index(op.f('ix_users_email'), 'users', ['email'], unique=True)
     op.create_index(op.f('ix_users_github_id'), 'users', ['github_id'], unique=True)
     op.create_index(op.f('ix_users_google_id'), 'users', ['google_id'], unique=True)
@@ -69,9 +71,14 @@ def upgrade() -> None:
     op.create_table('dreams',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('creator_id', sa.Integer(), nullable=False),
-    sa.Column('prompt_text', sa.Text(), nullable=False),
+    sa.Column('title', sa.String(length=255), nullable=True),
+    sa.Column('prompt_text', sa.Text(), nullable=True),
     sa.Column('prd_text', sa.Text(), nullable=True),
     sa.Column('extra_specs', sa.JSON().with_variant(postgresql.JSONB(astext_type=sa.Text()), 'postgresql'), nullable=True),
+    sa.Column('app_url', sa.String(length=512), nullable=True),
+    sa.Column('youtube_url', sa.String(length=512), nullable=True),
+    sa.Column('is_agent_submitted', sa.Boolean(), nullable=False),
+    sa.Column('slug', sa.String(length=255), nullable=False),
     sa.Column('parent_dream_id', sa.Integer(), nullable=True),
     sa.Column('status', sa.Enum('CONCEPT', 'WIP', 'LIVE', name='dreamstatus'), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
@@ -83,6 +90,7 @@ def upgrade() -> None:
     op.create_index(op.f('ix_dreams_creator_id'), 'dreams', ['creator_id'], unique=False)
     op.create_index(op.f('ix_dreams_id'), 'dreams', ['id'], unique=False)
     op.create_index(op.f('ix_dreams_parent_dream_id'), 'dreams', ['parent_dream_id'], unique=False)
+    op.create_index(op.f('ix_dreams_slug'), 'dreams', ['slug'], unique=True)
     op.create_index(op.f('ix_dreams_status'), 'dreams', ['status'], unique=False)
     op.create_table('follows',
     sa.Column('follower_id', sa.Integer(), nullable=False),
@@ -131,24 +139,27 @@ def upgrade() -> None:
     sa.Column('user_id', sa.Integer(), nullable=False),
     sa.Column('content', sa.Text(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
-    sa.Column('likes_count', sa.Integer(), nullable=False),
+    sa.Column('score', sa.Integer(), nullable=False),
+    sa.Column('parent_id', sa.Integer(), nullable=True),
     sa.ForeignKeyConstraint(['dream_id'], ['dreams.id'], ),
+    sa.ForeignKeyConstraint(['parent_id'], ['comments.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
     op.create_index(op.f('ix_comments_created_at'), 'comments', ['created_at'], unique=False)
     op.create_index(op.f('ix_comments_dream_id'), 'comments', ['dream_id'], unique=False)
     op.create_index(op.f('ix_comments_id'), 'comments', ['id'], unique=False)
+    op.create_index(op.f('ix_comments_parent_id'), 'comments', ['parent_id'], unique=False)
     op.create_index(op.f('ix_comments_user_id'), 'comments', ['user_id'], unique=False)
-    op.create_table('dream_images',
+    op.create_table('dream_media',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('dream_id', sa.Integer(), nullable=False),
-    sa.Column('image_url', sa.String(length=512), nullable=False),
+    sa.Column('media_url', sa.String(length=512), nullable=False),
     sa.ForeignKeyConstraint(['dream_id'], ['dreams.id'], ),
     sa.PrimaryKeyConstraint('id')
     )
-    op.create_index(op.f('ix_dream_images_dream_id'), 'dream_images', ['dream_id'], unique=False)
-    op.create_index(op.f('ix_dream_images_id'), 'dream_images', ['id'], unique=False)
+    op.create_index(op.f('ix_dream_media_dream_id'), 'dream_media', ['dream_id'], unique=False)
+    op.create_index(op.f('ix_dream_media_id'), 'dream_media', ['id'], unique=False)
     op.create_table('dream_tags',
     sa.Column('dream_id', sa.Integer(), nullable=False),
     sa.Column('tag_id', sa.Integer(), nullable=False),
@@ -208,31 +219,32 @@ def upgrade() -> None:
     op.create_index(op.f('ix_reviews_dream_id'), 'reviews', ['dream_id'], unique=False)
     op.create_index(op.f('ix_reviews_id'), 'reviews', ['id'], unique=False)
     op.create_index(op.f('ix_reviews_user_id'), 'reviews', ['user_id'], unique=False)
-    op.create_table('comment_likes',
+    op.create_table('comment_votes',
     sa.Column('id', sa.Integer(), nullable=False),
     sa.Column('comment_id', sa.Integer(), nullable=False),
     sa.Column('user_id', sa.Integer(), nullable=False),
+    sa.Column('value', sa.Integer(), nullable=False),
     sa.Column('created_at', sa.DateTime(timezone=True), server_default=sa.text('now()'), nullable=False),
     sa.ForeignKeyConstraint(['comment_id'], ['comments.id'], ),
     sa.ForeignKeyConstraint(['user_id'], ['users.id'], ),
     sa.PrimaryKeyConstraint('id'),
-    sa.UniqueConstraint('comment_id', 'user_id', name='uq_comment_like')
+    sa.UniqueConstraint('comment_id', 'user_id', name='uq_comment_vote')
     )
-    op.create_index(op.f('ix_comment_likes_comment_id'), 'comment_likes', ['comment_id'], unique=False)
-    op.create_index(op.f('ix_comment_likes_created_at'), 'comment_likes', ['created_at'], unique=False)
-    op.create_index(op.f('ix_comment_likes_id'), 'comment_likes', ['id'], unique=False)
-    op.create_index(op.f('ix_comment_likes_user_id'), 'comment_likes', ['user_id'], unique=False)
+    op.create_index(op.f('ix_comment_votes_comment_id'), 'comment_votes', ['comment_id'], unique=False)
+    op.create_index(op.f('ix_comment_votes_created_at'), 'comment_votes', ['created_at'], unique=False)
+    op.create_index(op.f('ix_comment_votes_id'), 'comment_votes', ['id'], unique=False)
+    op.create_index(op.f('ix_comment_votes_user_id'), 'comment_votes', ['user_id'], unique=False)
     # ### end Alembic commands ###
 
 
 def downgrade() -> None:
     """Downgrade schema."""
     # ### commands auto generated by Alembic - please adjust! ###
-    op.drop_index(op.f('ix_comment_likes_user_id'), table_name='comment_likes')
-    op.drop_index(op.f('ix_comment_likes_id'), table_name='comment_likes')
-    op.drop_index(op.f('ix_comment_likes_created_at'), table_name='comment_likes')
-    op.drop_index(op.f('ix_comment_likes_comment_id'), table_name='comment_likes')
-    op.drop_table('comment_likes')
+    op.drop_index(op.f('ix_comment_votes_user_id'), table_name='comment_votes')
+    op.drop_index(op.f('ix_comment_votes_id'), table_name='comment_votes')
+    op.drop_index(op.f('ix_comment_votes_created_at'), table_name='comment_votes')
+    op.drop_index(op.f('ix_comment_votes_comment_id'), table_name='comment_votes')
+    op.drop_table('comment_votes')
     op.drop_index(op.f('ix_reviews_user_id'), table_name='reviews')
     op.drop_index(op.f('ix_reviews_id'), table_name='reviews')
     op.drop_index(op.f('ix_reviews_dream_id'), table_name='reviews')
@@ -250,10 +262,11 @@ def downgrade() -> None:
     op.drop_table('implementations')
     op.drop_table('dream_tools')
     op.drop_table('dream_tags')
-    op.drop_index(op.f('ix_dream_images_id'), table_name='dream_images')
-    op.drop_index(op.f('ix_dream_images_dream_id'), table_name='dream_images')
-    op.drop_table('dream_images')
+    op.drop_index(op.f('ix_dream_media_id'), table_name='dream_media')
+    op.drop_index(op.f('ix_dream_media_dream_id'), table_name='dream_media')
+    op.drop_table('dream_media')
     op.drop_index(op.f('ix_comments_user_id'), table_name='comments')
+    op.drop_index(op.f('ix_comments_parent_id'), table_name='comments')
     op.drop_index(op.f('ix_comments_id'), table_name='comments')
     op.drop_index(op.f('ix_comments_dream_id'), table_name='comments')
     op.drop_index(op.f('ix_comments_created_at'), table_name='comments')
@@ -270,6 +283,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_follows_created_at'), table_name='follows')
     op.drop_table('follows')
     op.drop_index(op.f('ix_dreams_status'), table_name='dreams')
+    op.drop_index(op.f('ix_dreams_slug'), table_name='dreams')
     op.drop_index(op.f('ix_dreams_parent_dream_id'), table_name='dreams')
     op.drop_index(op.f('ix_dreams_id'), table_name='dreams')
     op.drop_index(op.f('ix_dreams_creator_id'), table_name='dreams')
@@ -286,6 +300,7 @@ def downgrade() -> None:
     op.drop_index(op.f('ix_users_google_id'), table_name='users')
     op.drop_index(op.f('ix_users_github_id'), table_name='users')
     op.drop_index(op.f('ix_users_email'), table_name='users')
+    op.drop_index(op.f('ix_users_api_key'), table_name='users')
     op.drop_table('users')
     op.drop_index(op.f('ix_tools_name'), table_name='tools')
     op.drop_index(op.f('ix_tools_id'), table_name='tools')

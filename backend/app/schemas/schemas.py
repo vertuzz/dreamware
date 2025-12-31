@@ -97,6 +97,7 @@ class DreamUpdate(BaseModel):
 
 class Dream(DreamBase):
     id: int
+    slug: str
     creator_id: int
     parent_dream_id: Optional[int] = None
     created_at: datetime

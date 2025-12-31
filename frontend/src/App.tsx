@@ -12,11 +12,11 @@ function App() {
     <Routes>
       <Route path="/" element={<Home />} />
       <Route path="/dreams/create" element={<CreateDream />} />
-      <Route path="/dreams/:id" element={<ViewDream />} />
+      <Route path="/dreams/:slug" element={<ViewDream />} />
       <Route path="/login" element={<Login />} />
       <Route path="/signup" element={<Navigate to="/login?mode=signup" replace />} />
       <Route path="/profile" element={<Profile />} />
-      <Route path="/users/:userId" element={<UserPage />} />
+      <Route path="/users/:username" element={<UserPage />} />
       <Route path="/agent-instructions" element={<AgentInstructions />} />
     </Routes>
   );

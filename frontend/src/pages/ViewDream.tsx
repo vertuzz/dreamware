@@ -88,7 +88,7 @@ function DreamNotFound() {
 }
 
 export default function ViewDream() {
-    const { id } = useParams<{ id: string }>();
+    const { slug } = useParams<{ slug: string }>();
     const [dream, setDream] = useState<Dream | null>(null);
     const [comments, setComments] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(true);
@@ -96,21 +96,21 @@ export default function ViewDream() {
     const [likesCount, setLikesCount] = useState(0);
 
     const fetchDream = useCallback(async () => {
-        if (!id) return;
+        if (!slug) return;
         try {
-            const [dreamData, commentsData] = await Promise.all([
-                dreamService.getDream(parseInt(id)),
-                dreamService.getComments(parseInt(id))
-            ]);
+            const dreamData = await dreamService.getDream(slug);
             setDream(dreamData);
-            setComments(commentsData);
             setLikesCount(dreamData.likes_count || 0);
+
+            // Fetch comments using the retrieved ID
+            const commentsData = await dreamService.getComments(dreamData.id);
+            setComments(commentsData);
         } catch (err) {
             console.error(err);
         } finally {
             setLoading(false);
         }
-    }, [id]);
+    }, [slug]);
 
     useEffect(() => {
         fetchDream();

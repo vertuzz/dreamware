@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import type { Comment } from '~/lib/types';
+import { Link } from 'react-router-dom';
 import { useAuth } from '~/contexts/AuthContext';
 import api from '~/lib/api';
 
@@ -304,9 +305,9 @@ function CommentThread({ comment, dreamId, onRefresh, depth }: CommentThreadProp
 
                 <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
-                        <span className="font-bold text-sm text-[var(--foreground)]">
+                        <Link to={`/users/${comment.user?.username}`} className="font-bold text-sm text-[var(--foreground)] hover:text-primary transition-colors">
                             {comment.user?.username || 'Anonymous'}
-                        </span>
+                        </Link>
                         <span className="text-xs text-gray-500">
                             {formatRelativeTime(comment.created_at)}
                         </span>
