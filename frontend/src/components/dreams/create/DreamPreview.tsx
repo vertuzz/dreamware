@@ -49,10 +49,7 @@ export default function DreamPreview({
                             <h3 className="text-lg font-bold text-slate-900 dark:text-white leading-tight mb-1 truncate">{title || 'Untitled Dream'}</h3>
                             <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-2 min-h-[40px]">{tagline || 'Your tagline here...'}</p>
                         </div>
-                        <div className="flex flex-col items-end">
-                            <span className="text-sm font-bold text-slate-900 dark:text-white">$0</span>
-                            <span className="text-[10px] text-slate-400 line-through">$19</span>
-                        </div>
+
                     </div>
 
                     <div className="flex flex-wrap gap-1.5 pt-1">
