@@ -4,7 +4,7 @@ import { dreamService } from '~/lib/services/dream-service';
 import { toolService } from '~/lib/services/tool-service';
 import { tagService } from '~/lib/services/tag-service';
 import { mediaService } from '~/lib/services/media-service';
-import { isValidUrl } from '~/lib/utils';
+import { isValidUrl, isValidYoutubeUrl } from '~/lib/utils';
 import type { Tool, Tag } from '~/lib/types';
 import Header from '~/components/layout/Header';
 
@@ -20,6 +20,7 @@ export default function CreateDream() {
     // Form State
     const [title, setTitle] = useState('');
     const [appUrl, setAppUrl] = useState('');
+    const [youtubeUrl, setYoutubeUrl] = useState('');
     const [tagline, setTagline] = useState('');
     const [prdText, setPrdText] = useState('');
 
@@ -81,6 +82,11 @@ export default function CreateDream() {
             return;
         }
 
+        if (youtubeUrl && !isValidYoutubeUrl(youtubeUrl)) {
+            setError('Please enter a valid YouTube URL.');
+            return;
+        }
+
         setIsSubmitting(true);
         setError(null);
 
@@ -91,6 +97,7 @@ export default function CreateDream() {
                 prompt_text: tagline,
                 prd_text: prdText,
                 app_url: appUrl,
+                youtube_url: youtubeUrl || undefined,
                 is_agent_submitted: false,
                 tool_ids: selectedTools.map(t => t.id),
                 tag_ids: selectedTags.map(t => t.id),
@@ -155,6 +162,8 @@ export default function CreateDream() {
                             setTitle={setTitle}
                             appUrl={appUrl}
                             setAppUrl={setAppUrl}
+                            youtubeUrl={youtubeUrl}
+                            setYoutubeUrl={setYoutubeUrl}
                             tagline={tagline}
                             setTagline={setTagline}
                         />

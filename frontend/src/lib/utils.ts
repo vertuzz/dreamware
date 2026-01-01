@@ -21,3 +21,14 @@ export function isValidUrl(url: string) {
   }
 }
 
+export function isValidYoutubeUrl(url: string) {
+  if (!url) return true;
+  try {
+    // Support youtube.com/watch, youtu.be, and youtube.com/embed formats
+    const pattern = /^(https?:\/\/)?(www\.)?(youtube\.com\/(watch\?v=|embed\/)|youtu\.be\/)[\w-]+/;
+    return pattern.test(url);
+  } catch (e) {
+    return false;
+  }
+}
+

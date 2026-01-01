@@ -4,7 +4,7 @@ import { dreamService } from '~/lib/services/dream-service';
 import { toolService } from '~/lib/services/tool-service';
 import { tagService } from '~/lib/services/tag-service';
 import { mediaService } from '~/lib/services/media-service';
-import { isValidUrl } from '~/lib/utils';
+import { isValidUrl, isValidYoutubeUrl } from '~/lib/utils';
 import type { Tool, Tag, Dream, DreamMedia } from '~/lib/types';
 import Header from '~/components/layout/Header';
 import { useAuth } from '~/contexts/AuthContext';
@@ -26,6 +26,7 @@ export default function EditDream() {
     // Form State
     const [title, setTitle] = useState('');
     const [appUrl, setAppUrl] = useState('');
+    const [youtubeUrl, setYoutubeUrl] = useState('');
     const [tagline, setTagline] = useState('');
     const [prdText, setPrdText] = useState('');
 
@@ -62,6 +63,7 @@ export default function EditDream() {
                 // Pre-populate
                 setTitle(dreamData.title || '');
                 setAppUrl(dreamData.app_url || '');
+                setYoutubeUrl(dreamData.youtube_url || '');
                 setTagline(dreamData.prompt_text || '');
                 setPrdText(dreamData.prd_text || '');
                 setSelectedTools(dreamData.tools || []);
@@ -123,6 +125,11 @@ export default function EditDream() {
             return;
         }
 
+        if (youtubeUrl && !isValidYoutubeUrl(youtubeUrl)) {
+            setError('Please enter a valid YouTube URL.');
+            return;
+        }
+
         setIsSubmitting(true);
         setError(null);
 
@@ -133,6 +140,7 @@ export default function EditDream() {
                 prompt_text: tagline,
                 prd_text: prdText,
                 app_url: appUrl,
+                youtube_url: youtubeUrl || undefined,
                 tool_ids: selectedTools.map(t => t.id),
                 tag_ids: selectedTags.map(t => t.id),
                 status: appUrl ? 'Live' : 'Concept',
@@ -205,6 +213,8 @@ export default function EditDream() {
                             setTitle={setTitle}
                             appUrl={appUrl}
                             setAppUrl={setAppUrl}
+                            youtubeUrl={youtubeUrl}
+                            setYoutubeUrl={setYoutubeUrl}
                             tagline={tagline}
                             setTagline={setTagline}
                         />
