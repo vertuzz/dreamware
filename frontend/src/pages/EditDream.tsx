@@ -5,7 +5,7 @@ import { toolService } from '~/lib/services/tool-service';
 import { tagService } from '~/lib/services/tag-service';
 import { mediaService } from '~/lib/services/media-service';
 import { isValidUrl } from '~/lib/utils';
-import type { Tool, Tag, Dream } from '~/lib/types';
+import type { Tool, Tag, Dream, DreamMedia } from '~/lib/types';
 import Header from '~/components/layout/Header';
 import { useAuth } from '~/contexts/AuthContext';
 
@@ -35,9 +35,10 @@ export default function EditDream() {
     const [availableTools, setAvailableTools] = useState<Tool[]>([]);
     const [availableTags, setAvailableTags] = useState<Tag[]>([]);
 
-    // Media State (for new uploads)
+    // Media State
     const [files, setFiles] = useState<File[]>([]);
     const [previews, setPreviews] = useState<string[]>([]);
+    const [existingMedia, setExistingMedia] = useState<DreamMedia[]>([]);
 
     // UI State
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -65,11 +66,7 @@ export default function EditDream() {
                 setPrdText(dreamData.prd_text || '');
                 setSelectedTools(dreamData.tools || []);
                 setSelectedTags(dreamData.tags || []);
-
-                // If existing media, we don't necessarily show them in "previews" 
-                // because previews is for NEW uploads in CreateDream sub-components.
-                // But we could map them if we want to allow deleting existing ones.
-                // For now, let's just allow ADDING new ones.
+                setExistingMedia(dreamData.media || []);
             } catch (err) {
                 console.error('Failed to fetch data:', err);
                 setError('Failed to load dream data.');
@@ -104,6 +101,17 @@ export default function EditDream() {
             URL.revokeObjectURL(newPreviews[index]);
             return newPreviews.filter((_, i) => i !== index);
         });
+    };
+
+    const handleRemoveExisting = async (mediaId: number) => {
+        if (!dream) return;
+        try {
+            await mediaService.deleteMedia(dream.id, mediaId);
+            setExistingMedia(prev => prev.filter(m => m.id !== mediaId));
+        } catch (err) {
+            console.error('Failed to delete media:', err);
+            setError('Failed to delete media. Please try again.');
+        }
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -205,6 +213,8 @@ export default function EditDream() {
                             previews={previews}
                             handleFileChange={handleFileChange}
                             removeFile={removeFile}
+                            existingMedia={existingMedia}
+                            onRemoveExisting={handleRemoveExisting}
                         />
 
                         <DetailsSection
@@ -257,13 +267,20 @@ export default function EditDream() {
                             selectedTools={selectedTools}
                             selectedTags={selectedTags}
                         />
-                        {dream && dream.media && dream.media.length > 0 && (
+                        {existingMedia.length > 0 && (
                             <div className="mt-8 p-6 bg-white dark:bg-[var(--card)] rounded-2xl border border-[var(--border)]">
-                                <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Existing Media</h4>
+                                <h4 className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-4">Existing Media ({existingMedia.length})</h4>
                                 <div className="grid grid-cols-2 gap-3">
-                                    {dream.media.map((m, i) => (
-                                        <div key={i} className="aspect-video rounded-lg overflow-hidden border border-[var(--border)]">
+                                    {existingMedia.map((m) => (
+                                        <div key={m.id} className="aspect-video rounded-lg overflow-hidden border border-[var(--border)] relative group">
                                             <img src={m.media_url} alt="" className="w-full h-full object-cover" />
+                                            <button
+                                                type="button"
+                                                onClick={() => handleRemoveExisting(m.id)}
+                                                className="absolute top-2 right-2 size-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                                            >
+                                                <span className="material-symbols-outlined text-[16px]">close</span>
+                                            </button>
                                         </div>
                                     ))}
                                 </div>

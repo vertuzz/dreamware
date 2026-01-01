@@ -28,5 +28,9 @@ export const mediaService = {
         await api.post(`/dreams/${dreamId}/media`, {
             media_url: mediaUrl
         });
+    },
+
+    deleteMedia: async (dreamId: number, mediaId: number): Promise<void> => {
+        await api.delete(`/dreams/${dreamId}/media/${mediaId}`);
     }
 };

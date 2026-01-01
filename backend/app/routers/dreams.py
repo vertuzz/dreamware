@@ -440,3 +440,30 @@ async def add_dream_media(
     await db.commit()
     await db.refresh(db_media)
     return db_media
+
+@router.delete("/{dream_id}/media/{media_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_dream_media(
+    dream_id: int,
+    media_id: int,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+):
+    # Verify dream exists and user is owner
+    result = await db.execute(select(Dream).filter(Dream.id == dream_id))
+    db_dream = result.scalars().first()
+    if not db_dream:
+        raise HTTPException(status_code=404, detail="Dream not found")
+    if db_dream.creator_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    # Find and delete the media
+    result = await db.execute(
+        select(DreamMedia).filter(DreamMedia.id == media_id, DreamMedia.dream_id == dream_id)
+    )
+    db_media = result.scalars().first()
+    if not db_media:
+        raise HTTPException(status_code=404, detail="Media not found")
+    
+    await db.delete(db_media)
+    await db.commit()
+    return None

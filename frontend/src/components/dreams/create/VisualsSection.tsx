@@ -1,15 +1,20 @@
 import { useRef } from 'react';
+import type { DreamMedia } from '~/lib/types';
 
 interface VisualsSectionProps {
     previews: string[];
     handleFileChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     removeFile: (index: number) => void;
+    existingMedia?: DreamMedia[];
+    onRemoveExisting?: (mediaId: number) => void;
 }
 
 export default function VisualsSection({
     previews,
     handleFileChange,
-    removeFile
+    removeFile,
+    existingMedia = [],
+    onRemoveExisting
 }: VisualsSectionProps) {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -47,7 +52,37 @@ export default function VisualsSection({
                             <img className="w-full h-full object-cover" src={previews[previews.length - 1]} alt="Preview" />
                         </div>
                     )}
+                    {previews.length === 0 && existingMedia.length > 0 && (
+                        <div className="absolute inset-2 rounded-lg overflow-hidden">
+                            <img className="w-full h-full object-cover" src={existingMedia[existingMedia.length - 1].media_url} alt="Existing media" />
+                        </div>
+                    )}
                 </div>
+
+                {/* Existing Media Section */}
+                {existingMedia.length > 0 && (
+                    <div className="flex flex-col gap-2">
+                        <label className="text-slate-500 dark:text-slate-400 text-xs font-semibold uppercase tracking-wider">Existing Images</label>
+                        <div className="flex gap-3 overflow-x-auto py-2 scrollbar-hide">
+                            {existingMedia.map((media) => (
+                                <div key={media.id} className="relative min-w-[100px] h-16 rounded-lg overflow-hidden group border-2 border-slate-200 dark:border-slate-700">
+                                    <img className="w-full h-full object-cover" src={media.media_url} alt="Existing" />
+                                    {onRemoveExisting && (
+                                        <button
+                                            type="button"
+                                            onClick={(e) => { e.stopPropagation(); onRemoveExisting(media.id); }}
+                                            className="absolute top-1 right-1 size-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                        >
+                                            <span className="material-symbols-outlined text-[14px]">close</span>
+                                        </button>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+
+                {/* New Uploads Section */}
                 <div className="flex gap-3 overflow-x-auto py-2 scrollbar-hide">
                     {previews.map((url, idx) => (
                         <div key={idx} className="relative min-w-[100px] h-16 rounded-lg overflow-hidden group">
