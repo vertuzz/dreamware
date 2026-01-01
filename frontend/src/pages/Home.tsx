@@ -205,11 +205,9 @@ export default function Home() {
     useEffect(() => {
         if (cacheRestored) return;
         const timer = setTimeout(() => {
-            if (searchQuery !== '') {
-                setPage(1);
-                setHasMore(true);
-                fetchDreams(true);
-            }
+            setPage(1);
+            setHasMore(true);
+            fetchDreams(true);
         }, 300);
         return () => clearTimeout(timer);
         // eslint-disable-next-line react-hooks/exhaustive-deps
