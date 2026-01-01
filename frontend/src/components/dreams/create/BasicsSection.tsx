@@ -1,4 +1,6 @@
 
+import { isValidUrl } from '~/lib/utils';
+
 interface BasicsSectionProps {
     title: string;
     setTitle: (val: string) => void;
@@ -16,6 +18,8 @@ export default function BasicsSection({
     tagline,
     setTagline
 }: BasicsSectionProps) {
+    const isUrlValid = isValidUrl(appUrl);
+
     return (
         <section className="bg-white dark:bg-[#1E2330] rounded-xl p-6 md:p-8 shadow-sm border border-slate-100 dark:border-slate-800">
             <h2 className="text-slate-900 dark:text-white text-xl font-bold mb-6 flex items-center gap-2">
@@ -37,17 +41,24 @@ export default function BasicsSection({
                     <label className="text-slate-700 dark:text-slate-300 text-sm font-semibold">Live App Link</label>
                     <div className="relative">
                         <input
-                            className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 pl-10 pr-10 py-3 text-base text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-primary focus:ring-primary focus:ring-1 outline-none transition-all"
+                            className={`w-full rounded-xl border ${appUrl && !isUrlValid ? 'border-red-500 focus:border-red-500 focus:ring-red-500' : 'border-slate-200 dark:border-slate-700'} bg-slate-50 dark:bg-slate-900 pl-10 pr-10 py-3 text-base text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-primary focus:ring-primary focus:ring-1 outline-none transition-all`}
                             placeholder="https://..."
                             value={appUrl}
                             onChange={(e) => setAppUrl(e.target.value)}
                         />
                         <span className="material-symbols-outlined absolute left-3 top-3 text-slate-400 text-[20px]">link</span>
-                        {appUrl && (
+                        {appUrl && isUrlValid && (
                             <span className="material-symbols-outlined absolute right-3 top-3 text-green-500 text-[20px]">check_circle</span>
                         )}
+                        {appUrl && !isUrlValid && (
+                            <span className="material-symbols-outlined absolute right-3 top-3 text-red-500 text-[20px]">error</span>
+                        )}
                     </div>
+                    {appUrl && !isUrlValid && (
+                        <p className="text-red-500 text-xs mt-1">Please enter a valid URL (e.g., https://example.com)</p>
+                    )}
                 </div>
+
                 <div className="flex flex-col gap-2 md:col-span-2">
                     <label className="text-slate-700 dark:text-slate-300 text-sm font-semibold">Short Tagline</label>
                     <input

@@ -4,6 +4,7 @@ import { dreamService } from '~/lib/services/dream-service';
 import { toolService } from '~/lib/services/tool-service';
 import { tagService } from '~/lib/services/tag-service';
 import { mediaService } from '~/lib/services/media-service';
+import { isValidUrl } from '~/lib/utils';
 import type { Tool, Tag } from '~/lib/types';
 import Header from '~/components/layout/Header';
 
@@ -74,6 +75,11 @@ export default function CreateDream() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (isSubmitting) return;
+
+        if (appUrl && !isValidUrl(appUrl)) {
+            setError('Please enter a valid Live App Link before publishing.');
+            return;
+        }
 
         setIsSubmitting(true);
         setError(null);
@@ -186,7 +192,7 @@ export default function CreateDream() {
                             >
                                 {isSubmitting ? (
                                     <>
-                                        <span className="size-4 size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                        <span className="size-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                                         <span>Publishing...</span>
                                     </>
                                 ) : (
