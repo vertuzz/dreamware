@@ -9,6 +9,7 @@ export interface User {
     bio?: string;
     reputation_score?: number;
     api_key?: string;
+    is_admin?: boolean;
 }
 
 export interface DreamCreator {
@@ -82,6 +83,8 @@ export interface OwnershipClaim {
     status: 'pending' | 'approved' | 'rejected';
     created_at: string;
     resolved_at?: string;
+    claimant?: DreamCreator;
+    dream?: Dream;
 }
 
 export interface Comment {

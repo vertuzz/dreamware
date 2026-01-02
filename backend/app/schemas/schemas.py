@@ -230,6 +230,12 @@ class PresignedUrlRequest(BaseModel):
     filename: str
     content_type: str
 
+class DreamPublic(BaseModel):
+    id: int
+    title: Optional[str] = None
+    slug: str
+    model_config = ConfigDict(from_attributes=True)
+
 # Ownership Claim Schemas
 from app.models import ClaimStatus
 
@@ -245,3 +251,7 @@ class OwnershipClaim(BaseModel):
     created_at: datetime
     resolved_at: Optional[datetime] = None
     model_config = ConfigDict(from_attributes=True)
+
+class OwnershipClaimWithDetails(OwnershipClaim):
+    claimant: Optional[DreamCreator] = None
+    dream: Optional[DreamPublic] = None

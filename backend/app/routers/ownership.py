@@ -61,15 +61,18 @@ async def claim_ownership(
     await db.refresh(db_claim)
     return db_claim
 
-@router.get("/ownership-claims", response_model=List[schemas.OwnershipClaim])
+@router.get("/ownership-claims", response_model=List[schemas.OwnershipClaimWithDetails])
 async def get_all_pending_claims(
     current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_db)
 ):
     """Get all pending ownership claims (admin only)."""
-    stmt = select(OwnershipClaim).filter(
-        OwnershipClaim.status == ClaimStatus.PENDING
-    ).order_by(OwnershipClaim.created_at)
+    stmt = (
+        select(OwnershipClaim)
+        .options(selectinload(OwnershipClaim.claimant), selectinload(OwnershipClaim.dream))
+        .filter(OwnershipClaim.status == ClaimStatus.PENDING)
+        .order_by(OwnershipClaim.created_at)
+    )
     result = await db.execute(stmt)
     return result.scalars().all()
 
@@ -88,7 +91,11 @@ async def get_dream_claims(
     if not current_user.is_admin and dream.creator_id != current_user.id:
          raise HTTPException(status_code=403, detail="Not authorized to see claims for this dream")
 
-    stmt = select(OwnershipClaim).filter(OwnershipClaim.dream_id == dream_id)
+    stmt = (
+        select(OwnershipClaim)
+        .options(selectinload(OwnershipClaim.claimant))
+        .filter(OwnershipClaim.dream_id == dream_id)
+    )
     result = await db.execute(stmt)
     return result.scalars().all()
 

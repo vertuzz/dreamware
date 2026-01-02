@@ -60,6 +60,15 @@ export default function Header({ onSearch }: HeaderProps) {
               <span className="material-symbols-outlined text-[18px]">smart_toy</span>
               AI Agent
             </Link>
+            {user?.is_admin && (
+              <Link
+                to="/admin/claims"
+                className="text-sm font-semibold text-primary hover:text-primary-dark transition-colors flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[18px]">admin_panel_settings</span>
+                Admin
+              </Link>
+            )}
           </nav>
 
           {/* CTA Button */}

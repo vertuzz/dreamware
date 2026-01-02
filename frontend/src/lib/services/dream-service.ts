@@ -101,6 +101,11 @@ export const dreamService = {
         return response.data;
     },
 
+    getPendingClaims: async (): Promise<OwnershipClaim[]> => {
+        const response = await api.get('/ownership-claims');
+        return response.data;
+    },
+
     resolveClaim: async (claimId: number, status: 'approved' | 'rejected'): Promise<OwnershipClaim> => {
         const response = await api.put(`/ownership-claims/${claimId}/resolve`, null, { params: { status } });
         return response.data;

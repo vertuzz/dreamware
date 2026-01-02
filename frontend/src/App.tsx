@@ -6,6 +6,7 @@ import ViewDream from "./pages/ViewDream";
 import Login from "./pages/Login";
 import Profile from "./pages/Profile";
 import UserPage from "./pages/UserPage";
+import AdminClaims from "./pages/AdminClaims";
 import AgentInstructions from "./pages/AgentInstructions";
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
       <Route path="/signup" element={<Navigate to="/login?mode=signup" replace />} />
       <Route path="/profile" element={<Profile />} />
       <Route path="/users/:username" element={<UserPage />} />
+      <Route path="/admin/claims" element={<AdminClaims />} />
       <Route path="/agent-instructions" element={<AgentInstructions />} />
     </Routes>
   );
