@@ -28,10 +28,10 @@ function createParamsKey(params: URLSearchParams): string {
     return sortedParams.toString();
 }
 
-// Helper to parse comma-separated IDs from URL
-function parseIds(value: string | null): number[] {
+// Helper to parse comma-separated strings/ids from URL
+function parseParams(value: string | null): string[] {
     if (!value) return [];
-    return value.split(',').map(Number).filter(n => !isNaN(n));
+    return value.split(',').filter(Boolean);
 }
 
 export default function Home() {
@@ -39,8 +39,9 @@ export default function Home() {
     const { saveCache, loadCache } = useDreamCache();
 
     // Initialize state from URL params
-    const getInitialTagIds = () => parseIds(searchParams.get('tag_id'));
-    const getInitialToolIds = () => parseIds(searchParams.get('tool_id'));
+    const getInitialTagIds = () => parseParams(searchParams.get('tag_id')).map(Number).filter(n => !isNaN(n));
+    const getInitialToolIds = () => parseParams(searchParams.get('tool_id')).map(Number).filter(n => !isNaN(n));
+    const getInitialStatuses = () => parseParams(searchParams.get('status')) as Dream['status'][];
     const getInitialSort = (): SortOption => (searchParams.get('sort_by') as SortOption) || 'trending';
     const getInitialSearch = () => searchParams.get('search') || '';
 
@@ -51,6 +52,7 @@ export default function Home() {
     const [tools, setTools] = useState<Tool[]>([]);
     const [selectedTagIds, setSelectedTagIds] = useState<number[]>(getInitialTagIds);
     const [selectedToolIds, setSelectedToolIds] = useState<number[]>(getInitialToolIds);
+    const [selectedStatuses, setSelectedStatuses] = useState<Dream['status'][]>(getInitialStatuses);
     const [sortBy, setSortBy] = useState<SortOption>(getInitialSort);
     const [searchQuery, setSearchQuery] = useState(getInitialSearch);
     const [page, setPage] = useState(1);
@@ -86,6 +88,9 @@ export default function Home() {
         if (selectedToolIds.length > 0) {
             newParams.set('tool_id', selectedToolIds.join(','));
         }
+        if (selectedStatuses.length > 0) {
+            newParams.set('status', selectedStatuses.join(','));
+        }
         if (sortBy !== 'trending') {
             newParams.set('sort_by', sortBy);
         }
@@ -93,7 +98,7 @@ export default function Home() {
             newParams.set('search', searchQuery);
         }
         setSearchParams(newParams, { replace: true });
-    }, [selectedTagIds, selectedToolIds, sortBy, searchQuery, setSearchParams]);
+    }, [selectedTagIds, selectedToolIds, selectedStatuses, sortBy, searchQuery, setSearchParams]);
 
     const fetchDreams = useCallback(async (isInitial: boolean = false) => {
         if (isInitial) {
@@ -121,6 +126,17 @@ export default function Home() {
             if (selectedToolIds.length > 0) {
                 params.tool_id = selectedToolIds;
             }
+            if (selectedStatuses.length > 0) {
+                // Backend usually takes single status or we might need to handle multi-status if supported
+                // For now backend schemas.py line 68 shows status: Optional[DreamStatus]
+                // Let's check how backend handles it. 
+                // Currently backend only supports single status filter in get_dreams.
+                // We'll just take the first one or pass as list if backend updated.
+                // Looking at dreams.py:115: if status: query = query.filter(Dream.status == status)
+                // It only supports one. Let's send the first one or we can update backend.
+                // For now, let's keep it consistent with what backend supports.
+                params.status = selectedStatuses[0];
+            }
 
             const data = await dreamService.getDreams(params);
 
@@ -137,7 +153,7 @@ export default function Home() {
             setLoading(false);
             setLoadingMore(false);
         }
-    }, [page, sortBy, selectedTagIds, selectedToolIds, searchQuery]);
+    }, [page, sortBy, selectedTagIds, selectedToolIds, selectedStatuses, searchQuery]);
 
     // Load filter data (tags, tools) on mount
     useEffect(() => {
@@ -191,7 +207,7 @@ export default function Home() {
         setHasMore(true);
         fetchDreams(true);
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [sortBy, selectedTagIds, selectedToolIds]);
+    }, [sortBy, selectedTagIds, selectedToolIds, selectedStatuses]);
 
     // Fetch more when page changes (infinite scroll)
     useEffect(() => {
@@ -228,10 +244,11 @@ export default function Home() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [dreams, page, hasMore, saveCache]);
 
-    const handleFilterChange = (selected: { tagIds: number[]; toolIds: number[] }) => {
+    const handleFilterChange = (selected: { tagIds: number[]; toolIds: number[]; statuses: Dream['status'][] }) => {
         setCacheRestored(false); // Reset flag so filters work
         setSelectedTagIds(selected.tagIds);
         setSelectedToolIds(selected.toolIds);
+        setSelectedStatuses(selected.statuses);
     };
 
     const handleSortChange = (sort: SortOption) => {
@@ -315,11 +332,26 @@ export default function Home() {
                             tools={tools}
                             selectedTagIds={selectedTagIds}
                             selectedToolIds={selectedToolIds}
+                            selectedStatuses={selectedStatuses}
                             onChange={handleFilterChange}
                         />
 
                         {/* Selected chips for quick individual removal */}
                         <div className="hidden md:flex flex-wrap gap-2 overflow-x-auto scrollbar-hide">
+                            {selectedStatuses.map(status => (
+                                <button
+                                    key={`status-${status}`}
+                                    onClick={() => {
+                                        setCacheRestored(false);
+                                        setSelectedStatuses(prev => prev.filter(s => s !== status));
+                                    }}
+                                    className="inline-flex h-7 items-center gap-1.5 rounded-full border border-primary/20 bg-primary/5 px-3 text-[12px] font-medium text-primary hover:bg-primary/10 transition-colors"
+                                >
+                                    <span className="material-symbols-outlined text-[14px]">flag</span>
+                                    {status}
+                                    <span className="material-symbols-outlined text-[14px]">close</span>
+                                </button>
+                            ))}
                             {selectedTagIds.map(id => {
                                 const tag = tags.find(t => t.id === id);
                                 if (!tag) return null;

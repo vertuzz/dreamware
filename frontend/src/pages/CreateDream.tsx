@@ -13,6 +13,8 @@ import BasicsSection from '~/components/dreams/create/BasicsSection';
 import VisualsSection from '~/components/dreams/create/VisualsSection';
 import DetailsSection from '~/components/dreams/create/DetailsSection';
 import DreamPreview from '~/components/dreams/create/DreamPreview';
+import StatusSelector from '~/components/dreams/create/StatusSelector';
+import type { Dream } from '~/lib/types';
 
 export default function CreateDream() {
     const navigate = useNavigate();
@@ -23,6 +25,7 @@ export default function CreateDream() {
     const [youtubeUrl, setYoutubeUrl] = useState('');
     const [tagline, setTagline] = useState('');
     const [prdText, setPrdText] = useState('');
+    const [status, setStatus] = useState<Dream['status']>('Concept');
 
     // Selection state
     const [selectedTools, setSelectedTools] = useState<Tool[]>([]);
@@ -101,7 +104,7 @@ export default function CreateDream() {
                 is_agent_submitted: false,
                 tool_ids: selectedTools.map(t => t.id),
                 tag_ids: selectedTags.map(t => t.id),
-                status: appUrl ? 'Live' : 'Concept',
+                status: status,
                 extra_specs: {}
             });
 
@@ -166,6 +169,11 @@ export default function CreateDream() {
                             setYoutubeUrl={setYoutubeUrl}
                             tagline={tagline}
                             setTagline={setTagline}
+                        />
+
+                        <StatusSelector
+                            status={status}
+                            setStatus={setStatus}
                         />
 
                         <VisualsSection

@@ -14,6 +14,7 @@ import BasicsSection from '~/components/dreams/create/BasicsSection';
 import VisualsSection from '~/components/dreams/create/VisualsSection';
 import DetailsSection from '~/components/dreams/create/DetailsSection';
 import DreamPreview from '~/components/dreams/create/DreamPreview';
+import StatusSelector from '~/components/dreams/create/StatusSelector';
 
 export default function EditDream() {
     const { slug } = useParams<{ slug: string }>();
@@ -29,6 +30,7 @@ export default function EditDream() {
     const [youtubeUrl, setYoutubeUrl] = useState('');
     const [tagline, setTagline] = useState('');
     const [prdText, setPrdText] = useState('');
+    const [status, setStatus] = useState<Dream['status']>('Concept');
 
     // Selection state
     const [selectedTools, setSelectedTools] = useState<Tool[]>([]);
@@ -68,6 +70,7 @@ export default function EditDream() {
                 setPrdText(dreamData.prd_text || '');
                 setSelectedTools(dreamData.tools || []);
                 setSelectedTags(dreamData.tags || []);
+                setStatus(dreamData.status);
                 setExistingMedia(dreamData.media || []);
             } catch (err) {
                 console.error('Failed to fetch data:', err);
@@ -143,7 +146,7 @@ export default function EditDream() {
                 youtube_url: youtubeUrl || undefined,
                 tool_ids: selectedTools.map(t => t.id),
                 tag_ids: selectedTags.map(t => t.id),
-                status: appUrl ? 'Live' : 'Concept',
+                status: status,
             });
 
             // 2. Upload NEW Images if any
@@ -217,6 +220,11 @@ export default function EditDream() {
                             setYoutubeUrl={setYoutubeUrl}
                             tagline={tagline}
                             setTagline={setTagline}
+                        />
+
+                        <StatusSelector
+                            status={status}
+                            setStatus={setStatus}
                         />
 
                         <VisualsSection
