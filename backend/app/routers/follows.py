@@ -5,7 +5,7 @@ from sqlalchemy.exc import IntegrityError
 from typing import List
 
 from app.database import get_db
-from app.models import User, Follow
+from app.models import User, Follow, Notification, NotificationType
 from app.routers.auth import get_current_user
 
 router = APIRouter()
@@ -42,6 +42,16 @@ async def follow_user(
         
     db_follow = Follow(follower_id=current_user.id, followed_id=user_id)
     db.add(db_follow)
+
+    # Create notification
+    notification = Notification(
+        user_id=user_id,
+        type=NotificationType.FOLLOW,
+        content=f"{current_user.username} followed you",
+        link=f"/users/{current_user.username}",
+        is_read=False
+    )
+    db.add(notification)
     
     try:
         await db.commit()

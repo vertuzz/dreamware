@@ -36,10 +36,11 @@ class DreamStatus(str, enum.Enum):
     LIVE = "Live"
 
 class NotificationType(str, enum.Enum):
-    LIKE = "like"
-    COMMENT = "comment"
-    FORK = "fork"
-    IMPLEMENTATION = "implementation"
+    LIKE = "LIKE"
+    COMMENT = "COMMENT"
+    FORK = "FORK"
+    IMPLEMENTATION = "IMPLEMENTATION"
+    FOLLOW = "FOLLOW"
 
 class Follow(Base):
     __tablename__ = "follows"

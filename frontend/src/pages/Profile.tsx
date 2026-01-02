@@ -3,6 +3,7 @@ import { useAuth } from '~/contexts/AuthContext';
 import { dreamService } from '~/lib/services/dream-service';
 import type { Dream } from '~/lib/types';
 import DreamCard from '~/components/dreams/DreamCard';
+import NotificationList from '~/components/notifications/NotificationList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { Button } from '~/components/ui/button';
 import { Badge } from '~/components/ui/badge';
@@ -222,6 +223,12 @@ export default function Profile() {
                         >
                             Likes <span className="ml-2 text-sm text-gray-400 font-normal">{likedDreams.length}</span>
                         </TabsTrigger>
+                        <TabsTrigger
+                            value="notifications"
+                            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1 text-base font-semibold transition-all"
+                        >
+                            Notifications
+                        </TabsTrigger>
                     </TabsList>
 
                     <TabsContent value="dreams" className="pt-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
@@ -260,6 +267,10 @@ export default function Profile() {
                                 <p className="text-gray-500">Dreams you like will appear here.</p>
                             </div>
                         )}
+                    </TabsContent>
+
+                    <TabsContent value="notifications" className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <NotificationList />
                     </TabsContent>
                 </Tabs>
             </main>

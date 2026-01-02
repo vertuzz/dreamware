@@ -92,3 +92,13 @@ export interface CommentCreate {
     content: string;
     parent_id?: number;
 }
+
+export interface Notification {
+    id: number;
+    user_id: number;
+    type: string;
+    content: string;
+    link?: string;
+    is_read: boolean;
+    created_at: string;
+}

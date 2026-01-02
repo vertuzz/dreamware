@@ -1,5 +1,5 @@
 import api from '../api';
-import type { User } from '../types';
+import type { User, Notification } from '../types';
 
 export const userService = {
     getUser: async (id: string | number): Promise<User> => {
@@ -19,6 +19,21 @@ export const userService = {
 
     checkFollowStatus: async (userId: number): Promise<{ is_following: boolean }> => {
         const response = await api.get(`/users/${userId}/follow/status`);
+        return response.data;
+    },
+
+    getNotifications: async (): Promise<Notification[]> => {
+        const response = await api.get('/notifications/');
+        return response.data;
+    },
+
+    markNotificationRead: async (id: number): Promise<Notification> => {
+        const response = await api.patch(`/notifications/${id}/read`);
+        return response.data;
+    },
+
+    markAllNotificationsRead: async (): Promise<{ message: string }> => {
+        const response = await api.patch('/notifications/read-all');
         return response.data;
     },
 };

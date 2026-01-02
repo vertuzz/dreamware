@@ -4,6 +4,7 @@ import { userService } from '~/lib/services/user-service';
 import { dreamService } from '~/lib/services/dream-service';
 import type { User, Dream } from '~/lib/types';
 import DreamCard from '~/components/dreams/DreamCard';
+import NotificationList from '~/components/notifications/NotificationList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { Button } from '~/components/ui/button';
 import { Badge } from '~/components/ui/badge';
@@ -212,6 +213,14 @@ export default function UserPage() {
                         >
                             Likes <span className="ml-2 text-sm text-gray-400 font-normal">{likedDreams.length}</span>
                         </TabsTrigger>
+                        {currentUser?.id === user.id && (
+                            <TabsTrigger
+                                value="notifications"
+                                className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none py-3 px-1 text-base font-semibold"
+                            >
+                                Notifications
+                            </TabsTrigger>
+                        )}
                     </TabsList>
 
                     <TabsContent value="dreams" className="pt-2">
@@ -250,8 +259,12 @@ export default function UserPage() {
                             </div>
                         )}
                     </TabsContent>
+
+                    <TabsContent value="notifications" className="pt-2 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <NotificationList />
+                    </TabsContent>
                 </Tabs>
             </main>
-        </div>
+        </div >
     );
 }
