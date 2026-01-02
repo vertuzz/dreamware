@@ -10,6 +10,8 @@ interface AuthContextType {
     login: (credentials: any) => Promise<void>;
     logout: () => void;
     checkAuth: () => Promise<void>;
+    refreshUser: () => Promise<void>;
+    setUser: React.Dispatch<React.SetStateAction<User | null>>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -58,10 +60,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setToken(null);
     };
 
+    const refreshUser = async () => {
+        try {
+            const userData = await authService.getMe();
+            setUser(userData);
+        } catch (error) {
+            console.error('Failed to refresh user:', error);
+        }
+    };
+
     const isAuthenticated = !!token;
 
     return (
-        <AuthContext.Provider value={{ user, token, isAuthenticated, isLoading, login, logout, checkAuth }}>
+        <AuthContext.Provider value={{ user, token, isAuthenticated, isLoading, login, logout, checkAuth, refreshUser, setUser }}>
             {children}
         </AuthContext.Provider>
     );

@@ -1,5 +1,6 @@
 import api from '../api';
 import axios from 'axios';
+import { compressImage } from '../image-utils';
 
 export interface MediaResponse {
     upload_url: string;
@@ -16,10 +17,16 @@ export const mediaService = {
         return response.data;
     },
 
+    /**
+     * Upload a file to S3. If it's an image, it will be compressed to under 200KB first.
+     */
     uploadFile: async (file: File, uploadUrl: string): Promise<void> => {
-        await axios.put(uploadUrl, file, {
+        // Compress image files before upload
+        const fileToUpload = await compressImage(file);
+        
+        await axios.put(uploadUrl, fileToUpload, {
             headers: {
-                'Content-Type': file.type
+                'Content-Type': fileToUpload.type
             }
         });
     },

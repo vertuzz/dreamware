@@ -16,6 +16,9 @@ class UserUpdate(BaseModel):
     username: Optional[str] = None
     email: Optional[str] = None
     avatar: Optional[str] = None
+    full_name: Optional[str] = None
+    bio: Optional[str] = None
+    location: Optional[str] = None
 
 class UserLinkBase(BaseModel):
     label: str
@@ -30,6 +33,9 @@ class UserPublic(BaseModel):
     id: int
     username: str
     avatar: Optional[str] = None
+    full_name: Optional[str] = None
+    bio: Optional[str] = None
+    location: Optional[str] = None
     reputation_score: float
     is_admin: bool = False
     links: List[UserLink] = []

@@ -1,15 +1,33 @@
+export interface UserLink {
+    id: number;
+    user_id: number;
+    label: string;
+    url: string;
+}
+
 export interface User {
     id: number;
     username: string;
     email?: string;
     full_name?: string;
+    bio?: string;
+    location?: string;
     is_active: boolean;
     profile_image_url?: string;
     avatar?: string;
-    bio?: string;
     reputation_score?: number;
     api_key?: string;
     is_admin?: boolean;
+    links?: UserLink[];
+}
+
+export interface UserUpdate {
+    username?: string;
+    email?: string;
+    avatar?: string;
+    full_name?: string;
+    bio?: string;
+    location?: string;
 }
 
 export interface DreamCreator {

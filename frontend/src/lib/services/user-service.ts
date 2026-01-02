@@ -1,10 +1,24 @@
 import api from '../api';
-import type { User, Notification } from '../types';
+import type { User, Notification, UserLink, UserUpdate } from '../types';
 
 export const userService = {
     getUser: async (id: string | number): Promise<User> => {
         const response = await api.get(`/users/${id}`);
         return response.data;
+    },
+
+    updateUser: async (userId: number, data: UserUpdate): Promise<User> => {
+        const response = await api.patch(`/users/${userId}`, data);
+        return response.data;
+    },
+
+    createUserLink: async (userId: number, link: { label: string; url: string }): Promise<UserLink> => {
+        const response = await api.post(`/users/${userId}/links`, link);
+        return response.data;
+    },
+
+    deleteUserLink: async (userId: number, linkId: number): Promise<void> => {
+        await api.delete(`/users/${userId}/links/${linkId}`);
     },
 
     followUser: async (userId: number): Promise<{ message: string }> => {

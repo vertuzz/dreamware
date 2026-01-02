@@ -1,24 +1,43 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '~/contexts/AuthContext';
 import { dreamService } from '~/lib/services/dream-service';
-import type { Dream } from '~/lib/types';
+import type { Dream, User } from '~/lib/types';
 import DreamCard from '~/components/dreams/DreamCard';
 import NotificationList from '~/components/notifications/NotificationList';
+import EditProfileModal from '~/components/common/EditProfileModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { Button } from '~/components/ui/button';
 import { Badge } from '~/components/ui/badge';
-import { Github, Twitter, Linkedin, Edit2, LogOut, MapPin, Link as LinkIcon, Calendar, Key, Eye, EyeOff, Copy, Check } from 'lucide-react';
+import { Github, Twitter, Linkedin, Edit2, LogOut, MapPin, Calendar, Key, Eye, EyeOff, Copy, Check } from 'lucide-react';
 import Header from '~/components/layout/Header';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '~/components/ui/input';
 
+// X (Twitter) icon component
+const XIcon = ({ size = 20 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+);
+
 export default function Profile() {
-    const { user, logout, isLoading } = useAuth();
+    const { user, logout, isLoading, refreshUser, setUser } = useAuth();
     const [dreams, setDreams] = useState<Dream[]>([]);
     const [likedDreams, setLikedDreams] = useState<Dream[]>([]);
     const [showApiKey, setShowApiKey] = useState(false);
     const [copied, setCopied] = useState(false);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const navigate = useNavigate();
+
+    // Helper to get social link by label
+    const getSocialLink = (label: string): string | null => {
+        const link = user?.links?.find(l => l.label === label);
+        return link?.url || null;
+    };
+
+    const handleProfileUpdate = (updatedUser: User) => {
+        setUser(updatedUser);
+    };
 
     useEffect(() => {
         const fetchUserDreams = async () => {
@@ -100,7 +119,12 @@ export default function Profile() {
                                     <p className="text-lg text-gray-500 font-medium">{user.full_name || 'Vibe Architect'}</p>
                                 </div>
                                 <div className="flex gap-2">
-                                    <Button variant="outline" size="sm" className="rounded-full gap-2">
+                                    <Button 
+                                        variant="outline" 
+                                        size="sm" 
+                                        className="rounded-full gap-2"
+                                        onClick={() => setIsEditModalOpen(true)}
+                                    >
                                         <Edit2 size={16} /> Edit Profile
                                     </Button>
                                     <Button
@@ -119,12 +143,11 @@ export default function Profile() {
                             </p>
 
                             <div className="flex flex-wrap gap-y-2 gap-x-6 text-sm text-gray-500 font-medium">
-                                <div className="flex items-center gap-1.5">
-                                    <MapPin size={16} className="text-gray-400" /> Remote
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <LinkIcon size={16} className="text-gray-400" /> github.com/{user.username}
-                                </div>
+                                {user.location && (
+                                    <div className="flex items-center gap-1.5">
+                                        <MapPin size={16} className="text-gray-400" /> {user.location}
+                                    </div>
+                                )}
                                 <div className="flex items-center gap-1.5">
                                     <Calendar size={16} className="text-gray-400" /> Joined Dec 2025
                                 </div>
@@ -132,15 +155,39 @@ export default function Profile() {
 
                             {/* Social Icons */}
                             <div className="flex gap-4 pt-2">
-                                <a href="#" className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors border border-gray-100 shadow-sm">
-                                    <Github size={20} />
-                                </a>
-                                <a href="#" className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors border border-gray-100 shadow-sm">
-                                    <Twitter size={20} />
-                                </a>
-                                <a href="#" className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors border border-gray-100 shadow-sm">
-                                    <Linkedin size={20} />
-                                </a>
+                                {getSocialLink('GitHub') && (
+                                    <a 
+                                        href={getSocialLink('GitHub')!} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors border border-gray-100 shadow-sm"
+                                    >
+                                        <Github size={20} />
+                                    </a>
+                                )}
+                                {getSocialLink('X') && (
+                                    <a 
+                                        href={getSocialLink('X')!} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors border border-gray-100 shadow-sm"
+                                    >
+                                        <XIcon size={20} />
+                                    </a>
+                                )}
+                                {getSocialLink('LinkedIn') && (
+                                    <a 
+                                        href={getSocialLink('LinkedIn')!} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors border border-gray-100 shadow-sm"
+                                    >
+                                        <Linkedin size={20} />
+                                    </a>
+                                )}
+                                {!getSocialLink('GitHub') && !getSocialLink('X') && !getSocialLink('LinkedIn') && (
+                                    <p className="text-sm text-gray-400 italic">No social links added yet</p>
+                                )}
                             </div>
 
                             {/* API Key Section */}
@@ -274,6 +321,14 @@ export default function Profile() {
                     </TabsContent>
                 </Tabs>
             </main>
+
+            {/* Edit Profile Modal */}
+            <EditProfileModal
+                user={user}
+                isOpen={isEditModalOpen}
+                onClose={() => setIsEditModalOpen(false)}
+                onUpdate={handleProfileUpdate}
+            />
         </div>
     );
 }

@@ -56,6 +56,9 @@ class User(Base):
     username: Mapped[str] = mapped_column(String(50), unique=True, index=True)
     email: Mapped[str] = mapped_column(String(100), unique=True, index=True)
     avatar: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    full_name: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    bio: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    location: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
     reputation_score: Mapped[float] = mapped_column(Float, default=0.0, index=True)
     is_admin: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     
