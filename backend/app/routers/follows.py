@@ -7,6 +7,7 @@ from typing import List
 from app.database import get_db
 from app.models import User, Follow, Notification, NotificationType
 from app.routers.auth import get_current_user
+from app.services.reputation import update_reputation, FOLLOW_POINTS
 
 router = APIRouter()
 
@@ -55,6 +56,9 @@ async def follow_user(
     
     try:
         await db.commit()
+        # Update target user's reputation
+        await update_reputation(db, user_id, FOLLOW_POINTS)
+        await db.commit()
     except IntegrityError:
         await db.rollback()
         raise HTTPException(status_code=400, detail="Already following")
@@ -79,4 +83,9 @@ async def unfollow_user(
         
     await db.delete(db_follow)
     await db.commit()
+    
+    # Update target user's reputation
+    await update_reputation(db, user_id, -FOLLOW_POINTS)
+    await db.commit()
+    
     return {"message": "Unfollowed"}

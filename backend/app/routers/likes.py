@@ -6,6 +6,7 @@ from sqlalchemy.exc import IntegrityError
 from app.database import get_db
 from app.models import Like, User, Dream, Comment, Notification, NotificationType
 from app.routers.auth import get_current_user
+from app.services.reputation import update_reputation, LIKE_POINTS
 
 router = APIRouter()
 
@@ -35,6 +36,10 @@ async def like_dream(
             )
             db.add(notification)
             await db.commit()
+            
+            # Update dream creator's reputation
+            await update_reputation(db, dream.creator_id, LIKE_POINTS)
+            await db.commit()
     except IntegrityError:
         await db.rollback()
         raise HTTPException(status_code=400, detail="Already liked")
@@ -52,7 +57,16 @@ async def unlike_dream(
     if not db_like:
         raise HTTPException(status_code=404, detail="Like not found")
     
+    # Get dream to find creator for reputation update
+    result_dream = await db.execute(select(Dream).filter(Dream.id == dream_id))
+    dream = result_dream.scalars().first()
+    
     await db.delete(db_like)
     await db.commit()
+    
+    if dream and dream.creator_id != current_user.id:
+        await update_reputation(db, dream.creator_id, -LIKE_POINTS)
+        await db.commit()
+        
     return {"message": "Unliked"}
 

@@ -8,6 +8,7 @@ from app.database import get_db
 from app.models import Comment, User, Dream, Notification, NotificationType, CommentVote
 from app.schemas import schemas
 from app.routers.auth import get_current_user, get_current_user_optional
+from app.services.reputation import update_reputation, COMMENT_VOTE_POINTS
 
 router = APIRouter()
 
@@ -209,6 +210,10 @@ async def vote_comment(
     if score_delta != 0:
         comment.score += score_delta
         db.add(comment)
+        
+        # Update comment author's reputation (if not self-voting)
+        if comment.user_id != current_user.id:
+            await update_reputation(db, comment.user_id, score_delta * COMMENT_VOTE_POINTS)
         
     await db.commit()
     
