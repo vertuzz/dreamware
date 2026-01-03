@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useAuth } from '~/contexts/AuthContext';
 import { dreamService } from '~/lib/services/dream-service';
+import { userService } from '~/lib/services/user-service';
 import type { Dream, User } from '~/lib/types';
 import DreamCard from '~/components/dreams/DreamCard';
 import NotificationList from '~/components/notifications/NotificationList';
@@ -8,7 +9,7 @@ import EditProfileModal from '~/components/common/EditProfileModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { Button } from '~/components/ui/button';
 import { Badge } from '~/components/ui/badge';
-import { Github, Linkedin, Edit2, LogOut, MapPin, Calendar, Key, Eye, EyeOff, Copy, Check } from 'lucide-react';
+import { Github, Linkedin, Edit2, LogOut, MapPin, Calendar, Key, Eye, EyeOff, Copy, Check, RefreshCw } from 'lucide-react';
 import Header from '~/components/layout/Header';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '~/components/ui/input';
@@ -28,6 +29,7 @@ export default function Profile() {
     const [showApiKey, setShowApiKey] = useState(false);
     const [copied, setCopied] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isRegenerating, setIsRegenerating] = useState(false);
     const navigate = useNavigate();
 
     // SEO
@@ -120,7 +122,7 @@ export default function Profile() {
                             <div className="flex flex-wrap items-center justify-between gap-4">
                                 <div>
                                     <h1 className="text-3xl font-extrabold text-gray-900">@{user.username}</h1>
-                                    <p className="text-lg text-gray-500 font-medium">{user.full_name || 'Vibe Architect'}</p>
+                                    <p className="text-lg text-gray-500 font-medium">{user.full_name}</p>
                                 </div>
                                 <div className="flex gap-2">
                                     <Button
@@ -143,7 +145,7 @@ export default function Profile() {
                             </div>
 
                             <p className="max-w-2xl text-gray-700 leading-relaxed">
-                                {user.bio || 'Building the future of AI-powered dreams. Full-stack vibe coder & generative art enthusiast. Exploring the boundaries of human-AI collaboration.'}
+                                {user.bio}
                             </p>
 
                             <div className="flex flex-wrap gap-y-2 gap-x-6 text-sm text-gray-500 font-medium">
@@ -245,6 +247,28 @@ export default function Profile() {
                                         >
                                             {copied ? <Check size={18} className="text-green-500" /> : <Copy size={18} />}
                                             <span className="font-semibold">{copied ? 'Copied!' : 'Copy Key'}</span>
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            className="h-11 px-4 gap-2 rounded-xl border-gray-200 hover:border-orange-500 hover:text-orange-500 transition-all shadow-sm"
+                                            disabled={isRegenerating}
+                                            onClick={async () => {
+                                                if (confirm('Are you sure you want to regenerate your API key? The old key will stop working immediately.')) {
+                                                    setIsRegenerating(true);
+                                                    try {
+                                                        const updatedUser = await userService.regenerateApiKey();
+                                                        setUser(updatedUser);
+                                                    } catch (err) {
+                                                        console.error('Failed to regenerate API key:', err);
+                                                        alert('Failed to regenerate API key. Please try again.');
+                                                    } finally {
+                                                        setIsRegenerating(false);
+                                                    }
+                                                }
+                                            }}
+                                        >
+                                            <RefreshCw size={18} className={isRegenerating ? 'animate-spin' : ''} />
+                                            <span className="font-semibold">{isRegenerating ? 'Regenerating...' : 'Regenerate'}</span>
                                         </Button>
                                     </div>
                                 </div>

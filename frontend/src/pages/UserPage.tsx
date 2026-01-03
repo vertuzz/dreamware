@@ -148,7 +148,7 @@ export default function UserPage() {
                             <div className="flex flex-wrap items-center justify-between gap-4">
                                 <div>
                                     <h1 className="text-3xl font-extrabold text-gray-900">@{user.username}</h1>
-                                    <p className="text-lg text-gray-500 font-medium">{user.full_name || 'Vibe Architect'}</p>
+                                    <p className="text-lg text-gray-500 font-medium">{user.full_name}</p>
                                 </div>
                                 {currentUser?.id !== user.id && (
                                     <div className="flex gap-2">
@@ -169,7 +169,7 @@ export default function UserPage() {
                             </div>
 
                             <p className="max-w-2xl text-gray-700 leading-relaxed">
-                                {user.bio || 'Building the future of AI-powered dreams. Full-stack vibe coder & generative art enthusiast. Exploring the boundaries of human-AI collaboration.'}
+                                {user.bio}
                             </p>
 
                             <div className="flex flex-wrap gap-y-2 gap-x-6 text-sm text-gray-500 font-medium">

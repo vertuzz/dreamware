@@ -50,4 +50,9 @@ export const userService = {
         const response = await api.patch('/notifications/read-all');
         return response.data;
     },
+
+    regenerateApiKey: async (): Promise<User> => {
+        const response = await api.post('/auth/api-key/regenerate');
+        return response.data;
+    },
 };
