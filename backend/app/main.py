@@ -4,7 +4,7 @@ from app.routers import (
     auth, users, dreams, comments, reviews, 
     likes, implementations, collections, 
     follows, notifications, tools, tags, media,
-    ownership
+    ownership, feedback
 )
 
 app = FastAPI(
@@ -37,6 +37,7 @@ app.include_router(tools.router, prefix="/tools", tags=["tools"])
 app.include_router(tags.router, prefix="/tags", tags=["tags"])
 app.include_router(media.router, prefix="/media", tags=["media"])
 app.include_router(ownership.router, tags=["ownership"])
+app.include_router(feedback.router, tags=["feedback"])
 
 @app.get("/")
 async def root():

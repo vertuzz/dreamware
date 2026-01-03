@@ -43,6 +43,11 @@ class NotificationType(str, enum.Enum):
     FOLLOW = "FOLLOW"
     OWNERSHIP_CLAIM = "OWNERSHIP_CLAIM"
 
+class FeedbackType(str, enum.Enum):
+    BUG = "bug"
+    FEATURE = "feature"
+    OTHER = "other"
+
 class Follow(Base):
     __tablename__ = "follows"
     follower_id: Mapped[int] = mapped_column(ForeignKey("users.id"), primary_key=True)
@@ -282,3 +287,14 @@ class Notification(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
 
     user: Mapped["User"] = relationship("User", back_populates="notifications")
+
+
+class Feedback(Base):
+    __tablename__ = "feedback"
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    type: Mapped[FeedbackType] = mapped_column(Enum(FeedbackType), default=FeedbackType.OTHER)
+    message: Mapped[str] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+
+    user: Mapped["User"] = relationship("User")

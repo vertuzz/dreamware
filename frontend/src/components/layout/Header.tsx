@@ -1,5 +1,9 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '~/contexts/AuthContext';
+import FeedbackModal from '~/components/common/FeedbackModal';
+import { feedbackService } from '~/lib/services/feedback-service';
+import type { FeedbackType } from '~/lib/types';
 
 interface HeaderProps {
   onSearch?: (query: string) => void;
@@ -8,6 +12,11 @@ interface HeaderProps {
 export default function Header({ onSearch }: HeaderProps) {
   const { user } = useAuth();
   const isLoggedIn = !!user;
+  const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+
+  const handleSubmitFeedback = async (type: FeedbackType, message: string) => {
+    await feedbackService.submitFeedback({ type, message });
+  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[var(--border)] bg-white/80 dark:bg-[var(--background)]/90 backdrop-blur-md">
@@ -69,6 +78,15 @@ export default function Header({ onSearch }: HeaderProps) {
                 Admin
               </Link>
             )}
+            {isLoggedIn && (
+              <button
+                onClick={() => setIsFeedbackOpen(true)}
+                className="text-sm font-semibold text-[#0d111b] dark:text-white hover:text-primary transition-colors flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[18px]">feedback</span>
+                Feedback
+              </button>
+            )}
           </nav>
 
           {/* CTA Button */}
@@ -93,6 +111,13 @@ export default function Header({ onSearch }: HeaderProps) {
           </Link>
         </div>
       </div>
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={isFeedbackOpen}
+        onClose={() => setIsFeedbackOpen(false)}
+        onSubmit={handleSubmitFeedback}
+      />
     </header>
   );
 }

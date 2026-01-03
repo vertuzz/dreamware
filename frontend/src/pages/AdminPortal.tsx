@@ -4,14 +4,15 @@ import Header from '~/components/layout/Header';
 import { dreamService } from '~/lib/services/dream-service';
 import { tagService } from '~/lib/services/tag-service';
 import { toolService } from '~/lib/services/tool-service';
-import type { OwnershipClaim, TagWithCount, ToolWithCount } from '~/lib/types';
+import { feedbackService } from '~/lib/services/feedback-service';
+import type { OwnershipClaim, TagWithCount, ToolWithCount, Feedback } from '~/lib/types';
 import { Button } from '~/components/ui/button';
 import { Badge } from '~/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { useAuth } from '~/contexts/AuthContext';
-import { Clock, User, Box, Check, X, ArrowUpRight, MessageSquare, Tag, Wrench, Plus, Pencil, Trash2, AlertCircle } from 'lucide-react';
+import { Clock, User, Box, Check, X, ArrowUpRight, MessageSquare, Tag, Wrench, Plus, Pencil, Trash2, AlertCircle, MessagesSquare } from 'lucide-react';
 
 export default function AdminPortal() {
     const { user, isLoading: authLoading } = useAuth();
@@ -38,6 +39,11 @@ export default function AdminPortal() {
     const [editingToolId, setEditingToolId] = useState<number | null>(null);
     const [editingToolName, setEditingToolName] = useState('');
 
+    // Feedback state
+    const [feedbackList, setFeedbackList] = useState<Feedback[]>([]);
+    const [feedbackLoading, setFeedbackLoading] = useState(true);
+    const [feedbackError, setFeedbackError] = useState<string | null>(null);
+
     useEffect(() => {
         // Redirect if not admin
         if (!authLoading && (!user || !user.is_admin)) {
@@ -49,6 +55,7 @@ export default function AdminPortal() {
             fetchClaims();
             fetchTags();
             fetchTools();
+            fetchFeedback();
         }
     }, [user, authLoading, navigate]);
 
@@ -92,6 +99,20 @@ export default function AdminPortal() {
             setToolsError('Failed to load tools.');
         } finally {
             setToolsLoading(false);
+        }
+    };
+
+    const fetchFeedback = async () => {
+        try {
+            setFeedbackLoading(true);
+            const data = await feedbackService.listFeedback();
+            setFeedbackList(data);
+            setFeedbackError(null);
+        } catch (err: any) {
+            console.error('Failed to fetch feedback:', err);
+            setFeedbackError('Failed to load feedback.');
+        } finally {
+            setFeedbackLoading(false);
         }
     };
 
@@ -188,6 +209,19 @@ export default function AdminPortal() {
         }
     };
 
+    // Feedback handlers
+    const handleDeleteFeedback = async (id: number) => {
+        if (!confirm('Are you sure you want to delete this feedback?')) return;
+
+        try {
+            await feedbackService.deleteFeedback(id);
+            setFeedbackList(prev => prev.filter(f => f.id !== id));
+        } catch (err: any) {
+            console.error('Failed to delete feedback:', err);
+            setFeedbackError(err.response?.data?.detail || 'Failed to delete feedback.');
+        }
+    };
+
     if (authLoading) {
         return (
             <div className="min-h-screen bg-[var(--background)]">
@@ -240,6 +274,13 @@ export default function AdminPortal() {
                             Tools
                             <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                                 {tools.length}
+                            </Badge>
+                        </TabsTrigger>
+                        <TabsTrigger value="feedback" className="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-white">
+                            <MessagesSquare size={16} />
+                            Feedback
+                            <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
+                                {feedbackList.length}
                             </Badge>
                         </TabsTrigger>
                     </TabsList>
@@ -571,6 +612,94 @@ export default function AdminPortal() {
                                     ))}
                                 </div>
                             </Card>
+                        )}
+                    </TabsContent>
+
+                    {/* Feedback Tab */}
+                    <TabsContent value="feedback">
+                        {feedbackError && (
+                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-2xl flex items-center gap-3 text-red-700 dark:text-red-400 mb-6">
+                                <AlertCircle size={18} />
+                                <p className="text-sm font-semibold">{feedbackError}</p>
+                                <button onClick={() => setFeedbackError(null)} className="ml-auto text-red-500 hover:text-red-700">
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        )}
+
+                        {feedbackLoading ? (
+                            <div className="flex items-center justify-center h-40">
+                                <div className="size-8 border-4 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                            </div>
+                        ) : feedbackList.length === 0 ? (
+                            <Card className="border-dashed border-2 py-12 text-center bg-white/50 dark:bg-white/5">
+                                <CardContent className="flex flex-col items-center gap-4">
+                                    <div className="size-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center text-slate-400">
+                                        <MessagesSquare size={32} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-xl font-bold text-slate-900 dark:text-white">No feedback yet</h3>
+                                        <p className="text-slate-500 dark:text-slate-400 mt-1">User feedback will appear here.</p>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            <div className="grid gap-4">
+                                {feedbackList.map((feedback) => (
+                                    <Card key={feedback.id} className="bg-white dark:bg-[var(--card)] border-slate-200 dark:border-slate-800">
+                                        <CardHeader className="pb-3">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="size-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center overflow-hidden">
+                                                        {feedback.user?.avatar ? (
+                                                            <img src={feedback.user.avatar} alt={feedback.user.username} className="w-full h-full object-cover" />
+                                                        ) : (
+                                                            <User size={18} className="text-slate-400" />
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-semibold text-slate-900 dark:text-white">
+                                                            @{feedback.user?.username || 'Unknown'}
+                                                        </p>
+                                                        <p className="text-xs text-slate-500 flex items-center gap-1">
+                                                            <Clock size={12} />
+                                                            {new Date(feedback.created_at).toLocaleDateString('en-US', {
+                                                                month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit'
+                                                            })}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-center gap-2">
+                                                    <Badge className={
+                                                        feedback.type === 'bug' 
+                                                            ? 'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 border-none'
+                                                            : feedback.type === 'feature'
+                                                            ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border-none'
+                                                            : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300 border-none'
+                                                    }>
+                                                        {feedback.type === 'bug' && '🐛 Bug'}
+                                                        {feedback.type === 'feature' && '✨ Feature'}
+                                                        {feedback.type === 'other' && '💬 Other'}
+                                                    </Badge>
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="h-8 w-8 p-0 text-slate-500 hover:text-red-600"
+                                                        onClick={() => handleDeleteFeedback(feedback.id)}
+                                                    >
+                                                        <Trash2 size={14} />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        </CardHeader>
+                                        <CardContent>
+                                            <p className="text-slate-700 dark:text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
+                                                {feedback.message}
+                                            </p>
+                                        </CardContent>
+                                    </Card>
+                                ))}
+                            </div>
                         )}
                     </TabsContent>
                 </Tabs>

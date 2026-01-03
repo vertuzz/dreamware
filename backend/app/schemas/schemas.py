@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, ConfigDict, EmailStr, HttpUrl
-from app.models import DreamStatus, NotificationType
+from app.models import DreamStatus, NotificationType, FeedbackType
 
 # User Schemas
 class UserBase(BaseModel):
@@ -273,3 +273,26 @@ class OwnershipClaim(BaseModel):
 class OwnershipClaimWithDetails(OwnershipClaim):
     claimant: Optional[DreamCreator] = None
     dream: Optional[DreamPublic] = None
+
+
+# Feedback Schemas
+class FeedbackCreate(BaseModel):
+    type: FeedbackType = FeedbackType.OTHER
+    message: str
+
+class FeedbackUser(BaseModel):
+    id: int
+    username: str
+    avatar: Optional[str] = None
+    model_config = ConfigDict(from_attributes=True)
+
+class Feedback(BaseModel):
+    id: int
+    user_id: int
+    type: FeedbackType
+    message: str
+    created_at: datetime
+    model_config = ConfigDict(from_attributes=True)
+
+class FeedbackWithUser(Feedback):
+    user: Optional[FeedbackUser] = None

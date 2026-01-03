@@ -143,3 +143,23 @@ export interface Notification {
     is_read: boolean;
     created_at: string;
 }
+
+export type FeedbackType = 'bug' | 'feature' | 'other';
+
+export interface Feedback {
+    id: number;
+    user_id: number;
+    type: FeedbackType;
+    message: string;
+    created_at: string;
+    user?: {
+        id: number;
+        username: string;
+        avatar?: string;
+    };
+}
+
+export interface FeedbackCreate {
+    type: FeedbackType;
+    message: string;
+}
