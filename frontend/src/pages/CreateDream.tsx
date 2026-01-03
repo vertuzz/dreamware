@@ -7,6 +7,7 @@ import { mediaService } from '~/lib/services/media-service';
 import { isValidUrl, isValidYoutubeUrl } from '~/lib/utils';
 import type { Tool, Tag } from '~/lib/types';
 import Header from '~/components/layout/Header';
+import { usePageTitle } from '~/lib/hooks/useSEO';
 
 // Sub-components
 import BasicsSection from '~/components/dreams/create/BasicsSection';
@@ -19,6 +20,9 @@ import type { Dream } from '~/lib/types';
 
 export default function CreateDream() {
     const navigate = useNavigate();
+
+    // SEO
+    usePageTitle('Submit a Dream');
 
     // Form State
     const [title, setTitle] = useState('');

@@ -8,10 +8,11 @@ import EditProfileModal from '~/components/common/EditProfileModal';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { Button } from '~/components/ui/button';
 import { Badge } from '~/components/ui/badge';
-import { Github, Twitter, Linkedin, Edit2, LogOut, MapPin, Calendar, Key, Eye, EyeOff, Copy, Check } from 'lucide-react';
+import { Github, Linkedin, Edit2, LogOut, MapPin, Calendar, Key, Eye, EyeOff, Copy, Check } from 'lucide-react';
 import Header from '~/components/layout/Header';
 import { useNavigate } from 'react-router-dom';
 import { Input } from '~/components/ui/input';
+import { usePageTitle } from '~/lib/hooks/useSEO';
 
 // X (Twitter) icon component
 const XIcon = ({ size = 20 }: { size?: number }) => (
@@ -21,13 +22,16 @@ const XIcon = ({ size = 20 }: { size?: number }) => (
 );
 
 export default function Profile() {
-    const { user, logout, isLoading, refreshUser, setUser } = useAuth();
+    const { user, logout, isLoading, setUser } = useAuth();
     const [dreams, setDreams] = useState<Dream[]>([]);
     const [likedDreams, setLikedDreams] = useState<Dream[]>([]);
     const [showApiKey, setShowApiKey] = useState(false);
     const [copied, setCopied] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const navigate = useNavigate();
+
+    // SEO
+    usePageTitle('My Profile');
 
     // Helper to get social link by label
     const getSocialLink = (label: string): string | null => {
@@ -119,9 +123,9 @@ export default function Profile() {
                                     <p className="text-lg text-gray-500 font-medium">{user.full_name || 'Vibe Architect'}</p>
                                 </div>
                                 <div className="flex gap-2">
-                                    <Button 
-                                        variant="outline" 
-                                        size="sm" 
+                                    <Button
+                                        variant="outline"
+                                        size="sm"
                                         className="rounded-full gap-2"
                                         onClick={() => setIsEditModalOpen(true)}
                                     >
@@ -156,9 +160,9 @@ export default function Profile() {
                             {/* Social Icons */}
                             <div className="flex gap-4 pt-2">
                                 {getSocialLink('GitHub') && (
-                                    <a 
-                                        href={getSocialLink('GitHub')!} 
-                                        target="_blank" 
+                                    <a
+                                        href={getSocialLink('GitHub')!}
+                                        target="_blank"
                                         rel="noopener noreferrer"
                                         className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors border border-gray-100 shadow-sm"
                                     >
@@ -166,9 +170,9 @@ export default function Profile() {
                                     </a>
                                 )}
                                 {getSocialLink('X') && (
-                                    <a 
-                                        href={getSocialLink('X')!} 
-                                        target="_blank" 
+                                    <a
+                                        href={getSocialLink('X')!}
+                                        target="_blank"
                                         rel="noopener noreferrer"
                                         className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors border border-gray-100 shadow-sm"
                                     >
@@ -176,9 +180,9 @@ export default function Profile() {
                                     </a>
                                 )}
                                 {getSocialLink('LinkedIn') && (
-                                    <a 
-                                        href={getSocialLink('LinkedIn')!} 
-                                        target="_blank" 
+                                    <a
+                                        href={getSocialLink('LinkedIn')!}
+                                        target="_blank"
                                         rel="noopener noreferrer"
                                         className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors border border-gray-100 shadow-sm"
                                     >

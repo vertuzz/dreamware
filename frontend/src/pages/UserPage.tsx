@@ -11,6 +11,7 @@ import { Badge } from '~/components/ui/badge';
 import { Github, Twitter, Linkedin, MapPin, Link as LinkIcon, Calendar, UserPlus, UserCheck } from 'lucide-react';
 import Header from '~/components/layout/Header';
 import { useAuth } from '~/contexts/AuthContext';
+import { useSEO } from '~/lib/hooks/useSEO';
 
 export default function UserPage() {
     const { username } = useParams<{ username: string }>();
@@ -22,6 +23,13 @@ export default function UserPage() {
     const [isFollowing, setIsFollowing] = useState(false);
     const [followLoading, setFollowLoading] = useState(false);
     const { user: currentUser, isAuthenticated } = useAuth();
+
+    // SEO - Dynamic user page title
+    useSEO({
+        title: user ? `@${user.username}` : username ? `@${username}` : 'User Profile',
+        description: user?.bio || `Explore dreams and creations by @${username} on Dreamware.`,
+        url: `/users/${username}`,
+    });
 
     useEffect(() => {
         const fetchUserData = async () => {

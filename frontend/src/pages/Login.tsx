@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { Github } from 'lucide-react';
 import Header from '~/components/layout/Header';
+import { usePageTitle } from '~/lib/hooks/useSEO';
 
 export default function Login() {
     const { login } = useAuth();
@@ -19,6 +20,9 @@ export default function Login() {
     const [signupData, setSignupData] = useState({ username: '', email: '', password: '' });
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
+
+    // SEO
+    usePageTitle(activeTab === 'signup' ? 'Sign Up' : 'Sign In');
 
     useEffect(() => {
         const mode = searchParams.get('mode');

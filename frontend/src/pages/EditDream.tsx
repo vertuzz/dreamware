@@ -8,6 +8,7 @@ import { isValidUrl, isValidYoutubeUrl } from '~/lib/utils';
 import type { Tool, Tag, Dream, DreamMedia } from '~/lib/types';
 import Header from '~/components/layout/Header';
 import { useAuth } from '~/contexts/AuthContext';
+import { useSEO } from '~/lib/hooks/useSEO';
 
 // Sub-components
 import BasicsSection from '~/components/dreams/create/BasicsSection';
@@ -24,6 +25,12 @@ export default function EditDream() {
 
     // Original Dream state
     const [dream, setDream] = useState<Dream | null>(null);
+
+    // SEO - Dynamic title based on loaded dream
+    useSEO({
+        title: dream ? `Edit: ${dream.title}` : 'Edit Dream',
+        url: `/dreams/${slug}/edit`,
+    });
 
     // Form State
     const [title, setTitle] = useState('');

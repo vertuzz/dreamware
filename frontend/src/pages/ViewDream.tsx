@@ -13,6 +13,7 @@ import {
 } from '~/components/dreams';
 import { Breadcrumbs } from '~/components/common/Breadcrumbs';
 import DeleteConfirmModal from '~/components/common/DeleteConfirmModal';
+import { useSEO } from '~/lib/hooks/useSEO';
 
 // Helper to format date
 function formatDate(dateString: string): string {
@@ -103,6 +104,15 @@ export default function ViewDream() {
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
     const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
     const [isDeleting, setIsDeleting] = useState(false);
+
+    // SEO - Dynamic dream page with social sharing meta tags
+    useSEO({
+        title: dream?.title || 'Dream',
+        description: dream?.prompt_text || 'Discover this AI-powered creation on Dreamware.',
+        image: dream?.media?.[0]?.media_url || undefined,
+        url: `/dreams/${slug}`,
+        type: 'article',
+    });
 
     const fetchDream = useCallback(async () => {
         // ... (fetchDream logic remains same)

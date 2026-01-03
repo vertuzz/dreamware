@@ -7,6 +7,7 @@ import DreamCardSkeleton from '~/components/dreams/DreamCardSkeleton';
 import FilterBar from '~/components/dreams/FilterBar';
 import Header from '~/components/layout/Header';
 import { useDreamCache } from '~/contexts/DreamCacheContext';
+import { useSEO } from '~/lib/hooks/useSEO';
 
 type SortOption = 'trending' | 'newest' | 'top_rated' | 'likes';
 
@@ -37,6 +38,9 @@ function parseParams(value: string | null): string[] {
 export default function Home() {
     const [searchParams, setSearchParams] = useSearchParams();
     const { saveCache, loadCache } = useDreamCache();
+
+    // SEO - Home page uses default site title
+    useSEO({ url: '/' });
 
     // Initialize state from URL params
     const getInitialTagIds = () => parseParams(searchParams.get('tag_id')).map(Number).filter(n => !isNaN(n));

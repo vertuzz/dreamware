@@ -5,6 +5,7 @@ import { Key, Terminal, Shield, Zap, Copy, Download, Check } from 'lucide-react'
 
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '~/contexts/AuthContext';
+import { usePageTitle } from '~/lib/hooks/useSEO';
 
 const BASE_URL = window.location.origin.replace('5173', '8000').replace('3000', '8000'); // Simple heuristic for dev
 
@@ -147,6 +148,9 @@ export default function AgentInstructions() {
     const { user } = useAuth();
     const [includeApiKey, setIncludeApiKey] = useState(false);
     const [copied, setCopied] = useState(false);
+
+    // SEO
+    usePageTitle('AI Agent API Instructions');
 
     const apiKey = user?.api_key || 'YOUR_API_KEY';
 
