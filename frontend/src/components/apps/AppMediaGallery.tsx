@@ -1,9 +1,11 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { AppMedia } from '~/lib/types';
+import MediaFullscreenModal from './MediaFullscreenModal';
 
 interface AppMediaGalleryProps {
     media?: AppMedia[];
     youtubeUrl?: string;
+    appUrl?: string;
     title: string;
 }
 
@@ -14,18 +16,68 @@ function getYouTubeVideoId(url: string): string | null {
     return match && match[2].length === 11 ? match[2] : null;
 }
 
-export default function AppMediaGallery({ media, youtubeUrl, title }: AppMediaGalleryProps) {
+// Media index constants
+const MEDIA_INDEX_APP_PREVIEW = -2;
+const MEDIA_INDEX_YOUTUBE = -1;
+
+export default function AppMediaGallery({ media, youtubeUrl, appUrl, title }: AppMediaGalleryProps) {
     const [selectedMediaIndex, setSelectedMediaIndex] = useState(0);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
 
     const hasYouTube = youtubeUrl && getYouTubeVideoId(youtubeUrl);
+    const hasAppUrl = !!appUrl;
     const heroMedia = media && media.length > 0 ? media[selectedMediaIndex]?.media_url : null;
     const youtubeId = youtubeUrl ? getYouTubeVideoId(youtubeUrl) : null;
+
+    // Detect mobile viewport
+    useEffect(() => {
+        const checkMobile = () => setIsMobile(window.innerWidth < 1024);
+        checkMobile();
+        window.addEventListener('resize', checkMobile);
+        return () => window.removeEventListener('resize', checkMobile);
+    }, []);
+
+    // Set initial selected media based on device
+    // Desktop: show app preview first if available
+    // Mobile: show first image (app preview is last in carousel)
+    useEffect(() => {
+        if (hasAppUrl && !isMobile) {
+            setSelectedMediaIndex(MEDIA_INDEX_APP_PREVIEW);
+        } else if (media && media.length > 0) {
+            setSelectedMediaIndex(0);
+        } else if (hasYouTube) {
+            setSelectedMediaIndex(MEDIA_INDEX_YOUTUBE);
+        } else if (hasAppUrl && isMobile) {
+            setSelectedMediaIndex(MEDIA_INDEX_APP_PREVIEW);
+        }
+    }, [hasAppUrl, hasYouTube, media, isMobile]);
 
     return (
         <section className="flex flex-col gap-4">
             {/* Main Preview (Hero) */}
             <div className="relative w-full aspect-[3/2] rounded-2xl overflow-hidden bg-gray-900 shadow-sm group">
-                {hasYouTube && selectedMediaIndex === -1 ? (
+                {/* App Preview iframe */}
+                {hasAppUrl && selectedMediaIndex === MEDIA_INDEX_APP_PREVIEW ? (
+                    <>
+                        <iframe
+                            src={appUrl}
+                            title={`${title} - Live Preview`}
+                            className="absolute inset-0 w-full h-full bg-white"
+                            sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
+                            loading="lazy"
+                        />
+                        {/* Expand button */}
+                        <button
+                            onClick={() => setIsFullscreen(true)}
+                            className="absolute top-3 right-3 z-20 flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-black/60 hover:bg-black/80 text-white text-sm font-medium transition-colors backdrop-blur-sm"
+                            aria-label="Expand to fullscreen"
+                        >
+                            <span className="material-symbols-outlined text-lg">fullscreen</span>
+                            <span className="hidden sm:inline">Expand</span>
+                        </button>
+                    </>
+                ) : hasYouTube && selectedMediaIndex === MEDIA_INDEX_YOUTUBE ? (
                     <iframe
                         className="absolute inset-0 w-full h-full"
                         src={`https://www.youtube.com/embed/${youtubeId}`}
@@ -57,10 +109,22 @@ export default function AppMediaGallery({ media, youtubeUrl, title }: AppMediaGa
                         />
                         <div className="absolute inset-0 bg-black/40 group-hover:bg-black/30 transition-colors" />
                         <button
-                            onClick={() => setSelectedMediaIndex(-1)}
+                            onClick={() => setSelectedMediaIndex(MEDIA_INDEX_YOUTUBE)}
                             className="absolute inset-0 m-auto size-20 flex items-center justify-center rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 hover:scale-110 transition-all duration-300 z-20"
                         >
                             <span className="material-symbols-outlined text-5xl filled">play_arrow</span>
+                        </button>
+                    </>
+                ) : hasAppUrl ? (
+                    <>
+                        <div className="absolute inset-0 bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                            <span className="material-symbols-outlined text-6xl text-primary/40">web</span>
+                        </div>
+                        <button
+                            onClick={() => setSelectedMediaIndex(MEDIA_INDEX_APP_PREVIEW)}
+                            className="absolute inset-0 m-auto size-20 flex items-center justify-center rounded-full bg-primary/20 backdrop-blur-sm text-primary hover:bg-primary/30 hover:scale-110 transition-all duration-300 z-20"
+                        >
+                            <span className="material-symbols-outlined text-5xl">play_arrow</span>
                         </button>
                     </>
                 ) : (
@@ -73,12 +137,29 @@ export default function AppMediaGallery({ media, youtubeUrl, title }: AppMediaGa
             </div>
 
             {/* Thumbnails Carousel */}
-            {((media && media.length > 0) || hasYouTube) && (
+            {((media && media.length > 0) || hasYouTube || hasAppUrl) && (
                 <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide snap-x">
+                    {/* App Preview thumbnail - first on desktop */}
+                    {hasAppUrl && !isMobile && (
+                        <button
+                            onClick={() => setSelectedMediaIndex(MEDIA_INDEX_APP_PREVIEW)}
+                            className={`relative shrink-0 w-32 aspect-[3/2] rounded-lg overflow-hidden snap-start ${selectedMediaIndex === MEDIA_INDEX_APP_PREVIEW
+                                ? 'ring-2 ring-primary ring-offset-2 ring-offset-[var(--background)]'
+                                : 'border border-[var(--border)] opacity-70 hover:opacity-100'
+                                } transition-opacity`}
+                        >
+                            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-3xl text-primary">web</span>
+                            </div>
+                            <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-xs py-1 text-center font-medium">
+                                Live Preview
+                            </div>
+                        </button>
+                    )}
                     {hasYouTube && (
                         <button
-                            onClick={() => setSelectedMediaIndex(-1)}
-                            className={`relative shrink-0 w-32 aspect-[3/2] rounded-lg overflow-hidden snap-start ${selectedMediaIndex === -1
+                            onClick={() => setSelectedMediaIndex(MEDIA_INDEX_YOUTUBE)}
+                            className={`relative shrink-0 w-32 aspect-[3/2] rounded-lg overflow-hidden snap-start ${selectedMediaIndex === MEDIA_INDEX_YOUTUBE
                                 ? 'ring-2 ring-primary ring-offset-2 ring-offset-[var(--background)]'
                                 : 'border border-[var(--border)] opacity-70 hover:opacity-100'
                                 } transition-opacity`}
@@ -109,7 +190,34 @@ export default function AppMediaGallery({ media, youtubeUrl, title }: AppMediaGa
                             />
                         </button>
                     ))}
+                    {/* App Preview thumbnail - last on mobile */}
+                    {hasAppUrl && isMobile && (
+                        <button
+                            onClick={() => setSelectedMediaIndex(MEDIA_INDEX_APP_PREVIEW)}
+                            className={`relative shrink-0 w-32 aspect-[3/2] rounded-lg overflow-hidden snap-start ${selectedMediaIndex === MEDIA_INDEX_APP_PREVIEW
+                                ? 'ring-2 ring-primary ring-offset-2 ring-offset-[var(--background)]'
+                                : 'border border-[var(--border)] opacity-70 hover:opacity-100'
+                                } transition-opacity`}
+                        >
+                            <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
+                                <span className="material-symbols-outlined text-3xl text-primary">web</span>
+                            </div>
+                            <div className="absolute bottom-0 inset-x-0 bg-black/60 text-white text-xs py-1 text-center font-medium">
+                                Live Preview
+                            </div>
+                        </button>
+                    )}
                 </div>
+            )}
+
+            {/* Fullscreen Modal */}
+            {hasAppUrl && (
+                <MediaFullscreenModal
+                    isOpen={isFullscreen}
+                    onClose={() => setIsFullscreen(false)}
+                    appUrl={appUrl}
+                    title={title}
+                />
             )}
         </section>
     );

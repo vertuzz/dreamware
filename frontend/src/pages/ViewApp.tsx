@@ -215,6 +215,7 @@ export default function ViewApp() {
                         <AppMediaGallery
                             media={app.media}
                             youtubeUrl={app.youtube_url}
+                            appUrl={app.app_url}
                             title={app.title}
                         />
 
