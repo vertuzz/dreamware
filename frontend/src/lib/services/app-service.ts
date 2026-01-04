@@ -35,7 +35,7 @@ const staticCache: {
 export const appService = {
     getApps: async (params?: AppQueryParams): Promise<App[]> => {
         const response = await api.get('/apps/', { params });
-        return response.data;
+        return Array.isArray(response.data) ? response.data : [];
     },
 
     getApp: async (id: number | string): Promise<App> => {
@@ -101,9 +101,9 @@ export const appService = {
         }
         // Make request and cache both the promise and result
         staticCache.tags.promise = api.get('/tags/').then(response => {
-            staticCache.tags.data = response.data;
+            staticCache.tags.data = Array.isArray(response.data) ? response.data : [];
             staticCache.tags.promise = null;
-            return response.data;
+            return staticCache.tags.data;
         }).catch(err => {
             staticCache.tags.promise = null;
             throw err;
@@ -122,9 +122,9 @@ export const appService = {
         }
         // Make request and cache both the promise and result
         staticCache.tools.promise = api.get('/tools/').then(response => {
-            staticCache.tools.data = response.data;
+            staticCache.tools.data = Array.isArray(response.data) ? response.data : [];
             staticCache.tools.promise = null;
-            return response.data;
+            return staticCache.tools.data;
         }).catch(err => {
             staticCache.tools.promise = null;
             throw err;
