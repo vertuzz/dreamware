@@ -16,16 +16,7 @@ const aspectRatioClasses = {
 };
 
 // Status badge component
-function StatusBadge({ status, isAgentSubmitted }: { status: Dream['status']; isAgentSubmitted: boolean }) {
-  if (isAgentSubmitted) {
-    return (
-      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-700 border border-purple-200 shadow-sm backdrop-blur-md">
-        <span className="material-symbols-outlined text-[14px] mr-1">bolt</span>
-        AUTO-AGENT
-      </span>
-    );
-  }
-
+function StatusBadge({ status }: { status: Dream['status'] }) {
   if (status === 'Live') {
     return (
       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200 shadow-sm backdrop-blur-md">
@@ -81,7 +72,7 @@ export default function DreamCard({ dream, aspectRatio = 'landscape', onLike }: 
               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
             />
             <div className="absolute top-3 right-3">
-              <StatusBadge status={dream.status} isAgentSubmitted={dream.is_agent_submitted} />
+              <StatusBadge status={dream.status} />
             </div>
           </div>
 
