@@ -9,8 +9,12 @@ import Profile from "./pages/Profile";
 import UserPage from "./pages/UserPage";
 import AdminPortal from "./pages/AdminPortal";
 import AgentInstructions from "./pages/AgentInstructions";
+import { usePageTracking } from "./hooks/usePageTracking";
 
 function App() {
+  // Track page views on route changes
+  usePageTracking();
+
   return (
     <Routes>
       <Route path="/" element={<Home />} />

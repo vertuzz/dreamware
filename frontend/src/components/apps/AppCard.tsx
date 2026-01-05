@@ -1,4 +1,4 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { App } from '~/lib/types';
 
 interface AppCardProps {
@@ -63,16 +63,24 @@ function formatCount(count: number | undefined): string {
 const placeholderImage = '/placeholder-app.png';
 
 export default function AppCard({ app, aspectRatio = 'landscape', onLike }: AppCardProps) {
+  const navigate = useNavigate();
+  
   // Get the first media image or use a placeholder
   const imageUrl = app.media?.[0]?.media_url || placeholderImage;
 
   const creatorName = app.creator?.username || `user_${app.creator_id}`;
   const creatorAvatar = app.creator?.avatar;
 
+  const handleCardClick = () => {
+    navigate(`/apps/${app.slug || app.id}`);
+  };
+
   return (
     <div className="break-inside-avoid mb-6 group cursor-pointer">
-      <Link to={`/apps/${app.slug || app.id}`}>
-        <div className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-700">
+      <div 
+        onClick={handleCardClick}
+        className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 border border-gray-100 dark:border-gray-700"
+      >
           {/* Image Section */}
           <div className={`relative ${aspectRatioClasses[aspectRatio]} w-full overflow-hidden`}>
             <img
@@ -99,7 +107,11 @@ export default function AppCard({ app, aspectRatio = 'landscape', onLike }: AppC
             {/* Footer */}
             <div className="flex items-center justify-between border-t border-gray-100 dark:border-gray-700 pt-3 mt-2">
               {/* Creator Info */}
-              <Link to={`/users/${creatorName}`} className="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full pr-2 transition-colors" onClick={(e) => e.stopPropagation()}>
+              <Link 
+                to={`/users/${creatorName}`} 
+                className="flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-full pr-2 transition-colors" 
+                onClick={(e) => e.stopPropagation()}
+              >
                 {creatorAvatar ? (
                   <img
                     src={creatorAvatar}
@@ -140,7 +152,6 @@ export default function AppCard({ app, aspectRatio = 'landscape', onLike }: AppC
             </div>
           </div>
         </div>
-      </Link>
     </div>
   );
 }

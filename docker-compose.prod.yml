@@ -50,6 +50,7 @@ services:
         VITE_API_URL: https://show-your.app/api
         VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
         VITE_GITHUB_CLIENT_ID: ${GITHUB_CLIENT_ID:-}
+        VITE_GA_MEASUREMENT_ID: ${GA_MEASUREMENT_ID:-}
     container_name: vibe-hub-frontend
     restart: always
     depends_on:
