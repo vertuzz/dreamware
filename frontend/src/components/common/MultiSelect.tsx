@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 export interface MultiSelectItem {
     id: number;
@@ -26,7 +27,10 @@ export default function MultiSelect({
 }: MultiSelectProps) {
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [dropdownPosition, setDropdownPosition] = useState<{ top: number; left: number; width: number }>({ top: 0, left: 0, width: 260 });
     const containerRef = useRef<HTMLDivElement>(null);
+    const buttonRef = useRef<HTMLButtonElement>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
     const searchInputRef = useRef<HTMLInputElement>(null);
 
     // Color variants
@@ -52,6 +56,27 @@ export default function MultiSelect({
     useEffect(() => {
         if (isOpen) {
             setSearchQuery('');
+            // Calculate dropdown position based on button position
+            if (buttonRef.current) {
+                const rect = buttonRef.current.getBoundingClientRect();
+                const viewportWidth = window.innerWidth;
+                const dropdownWidth = Math.min(280, viewportWidth - 32); // Max width with padding
+                
+                // Calculate left position, ensuring it doesn't overflow viewport
+                let left = rect.left;
+                if (left + dropdownWidth > viewportWidth - 16) {
+                    left = viewportWidth - dropdownWidth - 16;
+                }
+                if (left < 16) {
+                    left = 16;
+                }
+                
+                setDropdownPosition({
+                    top: rect.bottom + 8,
+                    left,
+                    width: dropdownWidth
+                });
+            }
             // Small delay to allow render before focus
             setTimeout(() => {
                 searchInputRef.current?.focus();
@@ -61,7 +86,11 @@ export default function MultiSelect({
 
     useEffect(() => {
         function handleClickOutside(event: MouseEvent) {
-            if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+            const target = event.target as Node;
+            const isOutsideContainer = containerRef.current && !containerRef.current.contains(target);
+            const isOutsideDropdown = dropdownRef.current && !dropdownRef.current.contains(target);
+            
+            if (isOutsideContainer && isOutsideDropdown) {
                 setIsOpen(false);
             }
         }
@@ -87,6 +116,7 @@ export default function MultiSelect({
     return (
         <div className="relative inline-block" ref={containerRef}>
             <button
+                ref={buttonRef}
                 type="button"
                 onClick={() => setIsOpen(!isOpen)}
                 className={`flex h-9 sm:h-10 items-center gap-1.5 sm:gap-2 rounded-lg sm:rounded-xl px-2.5 sm:px-4 text-xs sm:text-sm font-semibold transition-all border whitespace-nowrap
@@ -107,8 +137,16 @@ export default function MultiSelect({
                 </span>
             </button>
 
-            {isOpen && (
-                <div className="absolute left-0 top-full z-50 mt-2 w-[260px] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900 animate-in fade-in zoom-in duration-200">
+            {isOpen && createPortal(
+                <div 
+                    ref={dropdownRef}
+                    className="fixed z-[9999] overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-xl dark:border-slate-700 dark:bg-slate-900 animate-in fade-in zoom-in duration-200"
+                    style={{
+                        top: dropdownPosition.top,
+                        left: dropdownPosition.left,
+                        width: dropdownPosition.width,
+                    }}
+                >
                     <div className="border-b border-slate-100 p-2 dark:border-slate-800">
                         <div className="relative flex items-center">
                             <span className="material-symbols-outlined absolute left-3 text-[18px] text-slate-400">search</span>
@@ -174,7 +212,8 @@ export default function MultiSelect({
                             Done
                         </button>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
