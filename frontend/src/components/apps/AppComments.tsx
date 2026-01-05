@@ -149,6 +149,10 @@ interface CommentThreadProps {
     depth: number;
 }
 
+// Max depth constants for indentation capping (like Reddit)
+const MAX_INDENT_DEPTH_MOBILE = 3;  // Stop indenting after depth 3 on mobile
+const MAX_INDENT_DEPTH_DESKTOP = 6; // Stop indenting after depth 6 on desktop
+
 function CommentThread({ comment, appId, onRefresh, depth }: CommentThreadProps) {
     const { isAuthenticated, user } = useAuth();
     const [replying, setReplying] = useState(false);
@@ -168,6 +172,12 @@ function CommentThread({ comment, appId, onRefresh, depth }: CommentThreadProps)
     });
 
     const isOwner = isAuthenticated && user?.id === comment.user_id;
+
+    // Calculate if we should still indent at this depth
+    // On mobile (< md), cap at MAX_INDENT_DEPTH_MOBILE
+    // On desktop, cap at MAX_INDENT_DEPTH_DESKTOP
+    const shouldIndentMobile = depth > 0 && depth <= MAX_INDENT_DEPTH_MOBILE;
+    const shouldIndentDesktop = depth > 0 && depth <= MAX_INDENT_DEPTH_DESKTOP;
 
     const handleEditSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -257,10 +267,6 @@ function CommentThread({ comment, appId, onRefresh, depth }: CommentThreadProps)
         }
     };
 
-    // Max depth to stop indentation to prevent squishing
-    const maxIndentationDepth = 5;
-    const isTooDeep = depth > maxIndentationDepth;
-
     if (collapsed) {
         return (
             <div className={`py-2 ${depth > 0 ? 'ml-0 border-l-2 border-transparent' : ''}`}>
@@ -277,27 +283,30 @@ function CommentThread({ comment, appId, onRefresh, depth }: CommentThreadProps)
         );
     }
 
-    return (
-        <div className={`group relative ${depth > 0 ? 'mt-4' : ''}`}>
+    // Calculate thread line position based on depth capping
+    const showThreadLine = depth > 0;
 
-            {/* Thread Line */}
-            {depth > 0 && (
-                <div className="absolute -left-[19px] top-0 bottom-0 w-[2px] bg-[var(--border)] group-hover:bg-gray-300 dark:group-hover:bg-gray-600 transition-colors" />
+    return (
+        <div className={`group relative ${depth > 0 ? 'mt-3 sm:mt-4' : ''}`}>
+
+            {/* Thread Line - positioned differently based on depth cap */}
+            {showThreadLine && (
+                <div className="absolute -left-[12px] sm:-left-[16px] top-0 bottom-0 w-[2px] bg-[var(--border)] group-hover:bg-gray-300 dark:group-hover:bg-gray-600 transition-colors" />
             )}
 
-            <div className="flex gap-3">
+            <div className="flex gap-2 sm:gap-3">
                 {/* Avatar / Vote Column */}
                 <div className="flex flex-col items-center gap-1 shrink-0">
-                    <div className="size-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 font-bold overflow-hidden">
+                    <div className="size-6 sm:size-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center text-gray-500 font-bold overflow-hidden">
                         {comment.user?.avatar ? (
                             <img src={comment.user.avatar} alt={comment.user?.username} className="w-full h-full object-cover" />
                         ) : (
-                            <span className="text-xs">{comment.user?.username?.charAt(0).toUpperCase() || 'U'}</span>
+                            <span className="text-[10px] sm:text-xs">{comment.user?.username?.charAt(0).toUpperCase() || 'U'}</span>
                         )}
                     </div>
                     {/* Collapsing Line Trigger (for visual users) */}
                     <div
-                        className="flex-1 w-6 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded flex justify-center py-2"
+                        className="flex-1 w-4 sm:w-6 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded flex justify-center py-2"
                         onClick={() => setCollapsed(true)}
                         title="Collapse thread"
                     />
@@ -353,32 +362,32 @@ function CommentThread({ comment, appId, onRefresh, depth }: CommentThreadProps)
                     )}
 
                     {/* Actions Row */}
-                    <div className="flex items-center gap-4 select-none">
+                    <div className="flex items-center gap-2 sm:gap-4 select-none flex-wrap">
                         {/* Voting */}
-                        <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
+                        <div className="flex items-center gap-0.5 sm:gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
                             <button
                                 onClick={() => handleVote(1)}
-                                className={`p-1 rounded hover:bg-white dark:hover:bg-gray-700 transition-colors ${voteState.userVote === 1 ? 'text-orange-500' : 'text-gray-500'}`}
+                                className={`p-0.5 sm:p-1 rounded hover:bg-white dark:hover:bg-gray-700 transition-colors ${voteState.userVote === 1 ? 'text-orange-500' : 'text-gray-500'}`}
                             >
-                                <span className={`material-symbols-outlined text-[18px] ${voteState.userVote === 1 ? 'fill-current' : ''}`}>arrow_upward</span>
+                                <span className={`material-symbols-outlined text-[16px] sm:text-[18px] ${voteState.userVote === 1 ? 'fill-current' : ''}`}>arrow_upward</span>
                             </button>
-                            <span className={`text-xs font-bold min-w-[16px] text-center ${voteState.userVote === 1 ? 'text-orange-500' : voteState.userVote === -1 ? 'text-blue-500' : 'text-gray-500'}`}>
+                            <span className={`text-[10px] sm:text-xs font-bold min-w-[14px] sm:min-w-[16px] text-center ${voteState.userVote === 1 ? 'text-orange-500' : voteState.userVote === -1 ? 'text-blue-500' : 'text-gray-500'}`}>
                                 {voteState.score}
                             </span>
                             <button
                                 onClick={() => handleVote(-1)}
-                                className={`p-1 rounded hover:bg-white dark:hover:bg-gray-700 transition-colors ${voteState.userVote === -1 ? 'text-blue-500' : 'text-gray-500'}`}
+                                className={`p-0.5 sm:p-1 rounded hover:bg-white dark:hover:bg-gray-700 transition-colors ${voteState.userVote === -1 ? 'text-blue-500' : 'text-gray-500'}`}
                             >
-                                <span className={`material-symbols-outlined text-[18px] ${voteState.userVote === -1 ? 'fill-current' : ''}`}>arrow_downward</span>
+                                <span className={`material-symbols-outlined text-[16px] sm:text-[18px] ${voteState.userVote === -1 ? 'fill-current' : ''}`}>arrow_downward</span>
                             </button>
                         </div>
 
                         {isAuthenticated && (
                             <button
                                 onClick={() => setReplying(!replying)}
-                                className="text-xs font-bold text-gray-500 hover:text-primary flex items-center gap-1"
+                                className="text-[10px] sm:text-xs font-bold text-gray-500 hover:text-primary flex items-center gap-0.5 sm:gap-1"
                             >
-                                <span className="material-symbols-outlined text-[16px]">chat_bubble</span>
+                                <span className="material-symbols-outlined text-[14px] sm:text-[16px]">chat_bubble</span>
                                 Reply
                             </button>
                         )}
@@ -387,17 +396,17 @@ function CommentThread({ comment, appId, onRefresh, depth }: CommentThreadProps)
                             <>
                                 <button
                                     onClick={() => setEditing(true)}
-                                    className="text-xs font-bold text-gray-500 hover:text-primary flex items-center gap-1"
+                                    className="text-[10px] sm:text-xs font-bold text-gray-500 hover:text-primary flex items-center gap-0.5 sm:gap-1"
                                 >
-                                    <span className="material-symbols-outlined text-[16px]">edit</span>
+                                    <span className="material-symbols-outlined text-[14px] sm:text-[16px]">edit</span>
                                     Edit
                                 </button>
                                 <button
                                     onClick={handleDelete}
-                                    className="text-xs font-bold text-gray-500 hover:text-red-500 flex items-center gap-1"
+                                    className="text-[10px] sm:text-xs font-bold text-gray-500 hover:text-red-500 flex items-center gap-0.5 sm:gap-1"
                                 >
-                                    <span className="material-symbols-outlined text-[16px]">delete</span>
-                                    Delete
+                                    <span className="material-symbols-outlined text-[14px] sm:text-[16px]">delete</span>
+                                    <span className="hidden sm:inline">Delete</span>
                                 </button>
                             </>
                         )}
@@ -436,7 +445,11 @@ function CommentThread({ comment, appId, onRefresh, depth }: CommentThreadProps)
 
                     {/* Nested Comments (Recursion) */}
                     {comment.children.length > 0 && (
-                        <div className={`mt-4 ${isTooDeep ? '' : 'pl-4 lg:pl-6'}`}>
+                        <div className={`mt-3 sm:mt-4 ${
+                            shouldIndentMobile ? 'pl-3' : 'pl-0'
+                        } ${
+                            shouldIndentDesktop ? 'sm:pl-4' : 'sm:pl-0'
+                        }`}>
                             {comment.children.map(child => (
                                 <CommentThread
                                     key={child.id}
