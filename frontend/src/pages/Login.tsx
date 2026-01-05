@@ -143,7 +143,7 @@ export default function Login() {
                         <h1 className="text-4xl font-bold mb-6 italic tracking-tight">Show Your App</h1>
                         <div className="space-y-4 max-w-md">
                             <p className="text-xl opacity-90">
-                                The "itch.io for AI Apps" – a launchpad and showcase platform for AI-generated software.
+                                A launchpad and showcase platform for AI-generated software.
                             </p>
                             <p className="text-lg opacity-75">
                                 Join the vibe coding revolution. Ship your dreams, get feedback, and find your first 100 users.
