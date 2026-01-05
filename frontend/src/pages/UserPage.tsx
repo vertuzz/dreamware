@@ -8,7 +8,14 @@ import NotificationList from '~/components/notifications/NotificationList';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { Button } from '~/components/ui/button';
 import { Badge } from '~/components/ui/badge';
-import { Github, Twitter, Linkedin, MapPin, Link as LinkIcon, Calendar, UserPlus, UserCheck } from 'lucide-react';
+import { Github, Linkedin, MapPin, Calendar, UserPlus, UserCheck } from 'lucide-react';
+
+// X (Twitter) icon component
+const XIcon = ({ size = 20 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+    </svg>
+);
 import Header from '~/components/layout/Header';
 import { useAuth } from '~/contexts/AuthContext';
 import { useSEO } from '~/lib/hooks/useSEO';
@@ -173,12 +180,11 @@ export default function UserPage() {
                             </p>
 
                             <div className="flex flex-wrap gap-y-2 gap-x-6 text-sm text-gray-500 font-medium">
-                                <div className="flex items-center gap-1.5">
-                                    <MapPin size={16} className="text-gray-400" /> Remote
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                    <LinkIcon size={16} className="text-gray-400" /> github.com/{user.username}
-                                </div>
+                                {user.location && (
+                                    <div className="flex items-center gap-1.5">
+                                        <MapPin size={16} className="text-gray-400" /> {user.location}
+                                    </div>
+                                )}
                                 <div className="flex items-center gap-1.5">
                                     <Calendar size={16} className="text-gray-400" /> Joined Dec 2025
                                 </div>
@@ -186,15 +192,39 @@ export default function UserPage() {
 
                             {/* Social Icons */}
                             <div className="flex gap-4 pt-2">
-                                <a href="#" className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors border border-gray-100 shadow-sm">
-                                    <Github size={20} />
-                                </a>
-                                <a href="#" className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors border border-gray-100 shadow-sm">
-                                    <Twitter size={20} />
-                                </a>
-                                <a href="#" className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors border border-gray-100 shadow-sm">
-                                    <Linkedin size={20} />
-                                </a>
+                                {user.links?.find(l => l.label === 'GitHub') && (
+                                    <a
+                                        href={user.links.find(l => l.label === 'GitHub')!.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors border border-gray-100 shadow-sm"
+                                    >
+                                        <Github size={20} />
+                                    </a>
+                                )}
+                                {user.links?.find(l => l.label === 'X') && (
+                                    <a
+                                        href={user.links.find(l => l.label === 'X')!.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors border border-gray-100 shadow-sm"
+                                    >
+                                        <XIcon size={20} />
+                                    </a>
+                                )}
+                                {user.links?.find(l => l.label === 'LinkedIn') && (
+                                    <a
+                                        href={user.links.find(l => l.label === 'LinkedIn')!.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="w-10 h-10 rounded-full bg-gray-50 flex items-center justify-center text-gray-600 hover:bg-gray-100 transition-colors border border-gray-100 shadow-sm"
+                                    >
+                                        <Linkedin size={20} />
+                                    </a>
+                                )}
+                                {(!user.links || user.links.length === 0) && (
+                                    <p className="text-sm text-gray-400 italic">No social links</p>
+                                )}
                             </div>
                         </div>
                     </div>
