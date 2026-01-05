@@ -314,7 +314,7 @@ function CommentThread({ comment, appId, onRefresh, depth }: CommentThreadProps)
                         {/* Collapse Button */}
                         <button
                             onClick={() => setCollapsed(true)}
-                            className="text-gray-400 hover:text-gray-600 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="text-gray-400 hover:text-gray-600 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity"
                         >
                             <span className="material-symbols-outlined text-[16px]">remove_circle_outline</span>
                         </button>
