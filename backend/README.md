@@ -62,6 +62,12 @@ GOOGLE_CLIENT_ID=your_google_client_id
 GOOGLE_CLIENT_SECRET=your_google_client_secret
 GITHUB_CLIENT_ID=your_github_client_id
 GITHUB_CLIENT_SECRET=your_github_client_secret
+
+# AI Agent (admin-only feature)
+AGENT_API_BASE=https://api.openai.com/v1  # OpenAI-compatible endpoint
+AGENT_API_KEY=sk-...                       # API key for the LLM provider
+AGENT_MODEL=gpt-4o                         # Model name
+AGENT_HEADLESS=true                        # Browser runs headless in production
 ```
 
 ### 5. Database Initialization
@@ -88,8 +94,13 @@ uv run pytest
 
 ## Project Structure
 - `app/`: Main application code.
+  - `agent/`: Pydantic AI agent for automated app submission (admin-only).
+    - `agent.py`: Agent configuration and runner.
+    - `tools.py`: 13 agent tools (DB queries, S3 upload, browser automation).
+    - `browser.py`: Playwright browser automation for screenshots.
+    - `deps.py`: Dependency injection for agent runs.
   - `core/`: Security, JWT, and centralized configuration (`config.py`).
-  - `routers/`: 13 domain-specific API routers (including `media.py`).
+  - `routers/`: 14 domain-specific API routers (including `media.py`, `agent.py`).
   - `schemas/`: Pydantic models for request/response validation.
   - `models.py`: SQLAlchemy database models.
   - `main.py`: App entry point and router registration.

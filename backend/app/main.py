@@ -4,7 +4,7 @@ from app.routers import (
     auth, users, apps, comments, reviews, 
     likes, implementations, collections, 
     follows, notifications, tools, tags, media,
-    ownership, feedback
+    ownership, feedback, agent
 )
 from app.core.config import settings
 
@@ -40,6 +40,7 @@ app.include_router(tags.router, prefix="/tags", tags=["tags"])
 app.include_router(media.router, prefix="/media", tags=["media"])
 app.include_router(ownership.router, tags=["ownership"])
 app.include_router(feedback.router, tags=["feedback"])
+app.include_router(agent.router, tags=["agent"])
 
 @app.get("/")
 async def root():

@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     # CORS settings - comma-separated list of allowed origins
     CORS_ORIGINS: str = os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:3000")
     
+    # Agent settings (OpenAI-compatible API)
+    AGENT_API_BASE: Optional[str] = os.getenv("AGENT_API_BASE")  # e.g., "https://api.openai.com/v1"
+    AGENT_API_KEY: Optional[str] = os.getenv("AGENT_API_KEY")
+    AGENT_MODEL: str = os.getenv("AGENT_MODEL", "gpt-4o")
+    AGENT_HEADLESS: bool = os.getenv("AGENT_HEADLESS", "true").lower() == "true"
+    
     @property
     def cors_origins_list(self) -> List[str]:
         """Parse CORS_ORIGINS into a list."""

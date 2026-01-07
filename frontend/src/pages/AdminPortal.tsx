@@ -5,14 +5,16 @@ import { appService } from '~/lib/services/app-service';
 import { tagService } from '~/lib/services/tag-service';
 import { toolService } from '~/lib/services/tool-service';
 import { feedbackService } from '~/lib/services/feedback-service';
+import { agentService, type AgentStatus, type AgentRunResponse } from '~/lib/services/agent-service';
 import type { OwnershipClaim, TagWithCount, ToolWithCount, Feedback, DeadAppReport } from '~/lib/types';
 import { Button } from '~/components/ui/button';
 import { Badge } from '~/components/ui/badge';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '~/components/ui/card';
 import { Input } from '~/components/ui/input';
+import { Textarea } from '~/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { useAuth } from '~/contexts/AuthContext';
-import { Clock, User, Box, Check, X, ArrowUpRight, MessageSquare, Tag, Wrench, Plus, Pencil, Trash2, AlertCircle, MessagesSquare, Link2Off } from 'lucide-react';
+import { Clock, User, Box, Check, X, ArrowUpRight, MessageSquare, Tag, Wrench, Plus, Pencil, Trash2, AlertCircle, MessagesSquare, Link2Off, Bot, Play, Loader2 } from 'lucide-react';
 
 export default function AdminPortal() {
     const { user, isLoading: authLoading } = useAuth();
@@ -49,6 +51,13 @@ export default function AdminPortal() {
     const [deadReportsLoading, setDeadReportsLoading] = useState(true);
     const [deadReportsError, setDeadReportsError] = useState<string | null>(null);
 
+    // Agent state
+    const [agentStatus, setAgentStatus] = useState<AgentStatus | null>(null);
+    const [agentPrompt, setAgentPrompt] = useState('');
+    const [agentRunning, setAgentRunning] = useState(false);
+    const [agentResult, setAgentResult] = useState<AgentRunResponse | null>(null);
+    const [agentError, setAgentError] = useState<string | null>(null);
+
     useEffect(() => {
         // Redirect if not admin
         if (!authLoading && (!user || !user.is_admin)) {
@@ -62,10 +71,20 @@ export default function AdminPortal() {
             fetchTools();
             fetchFeedback();
             fetchDeadReports();
+            fetchAgentStatus();
         }
     }, [user, authLoading, navigate]);
 
     // Fetch functions
+    const fetchAgentStatus = async () => {
+        try {
+            const status = await agentService.getStatus();
+            setAgentStatus(status);
+        } catch (err: any) {
+            console.error('Failed to fetch agent status:', err);
+        }
+    };
+
     const fetchClaims = async () => {
         try {
             setClaimsLoading(true);
@@ -257,6 +276,29 @@ export default function AdminPortal() {
         }
     };
 
+    // Agent handlers
+    const handleRunAgent = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!agentPrompt.trim() || agentRunning) return;
+
+        setAgentRunning(true);
+        setAgentResult(null);
+        setAgentError(null);
+
+        try {
+            const result = await agentService.runAgent(agentPrompt.trim());
+            setAgentResult(result);
+            if (!result.success && result.error) {
+                setAgentError(result.error);
+            }
+        } catch (err: any) {
+            console.error('Agent run failed:', err);
+            setAgentError(err.response?.data?.detail || err.message || 'Agent execution failed');
+        } finally {
+            setAgentRunning(false);
+        }
+    };
+
     if (authLoading) {
         return (
             <div className="min-h-screen bg-[var(--background)]">
@@ -326,6 +368,10 @@ export default function AdminPortal() {
                                     {deadReports.length}
                                 </Badge>
                             )}
+                        </TabsTrigger>
+                        <TabsTrigger value="agent" className="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-white">
+                            <Bot size={16} />
+                            Agent
                         </TabsTrigger>
                     </TabsList>
 
@@ -846,6 +892,128 @@ export default function AdminPortal() {
                                     </Card>
                                 ))}
                             </div>
+                        )}
+                    </TabsContent>
+
+                    {/* Agent Tab */}
+                    <TabsContent value="agent">
+                        {agentError && (
+                            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 p-4 rounded-2xl flex items-center gap-3 text-red-700 dark:text-red-400 mb-6">
+                                <AlertCircle size={18} />
+                                <p className="text-sm font-semibold">{agentError}</p>
+                                <button onClick={() => setAgentError(null)} className="ml-auto text-red-500 hover:text-red-700">
+                                    <X size={16} />
+                                </button>
+                            </div>
+                        )}
+
+                        {/* Agent Status */}
+                        <Card className="mb-6 bg-white dark:bg-[var(--card)] border-slate-200 dark:border-slate-800">
+                            <CardHeader className="pb-4">
+                                <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                    <Bot size={18} className="text-primary" />
+                                    App Submission Agent
+                                </CardTitle>
+                                <CardDescription>
+                                    Paste a Reddit post or description of an app. The agent will visit the app, take screenshots, and create a polished listing.
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                {agentStatus && (
+                                    <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg">
+                                        <div className={`size-3 rounded-full ${agentStatus.configured ? 'bg-green-500' : 'bg-red-500'}`} />
+                                        <span className="text-sm text-slate-600 dark:text-slate-400">
+                                            {agentStatus.configured ? (
+                                                <>Model: <span className="font-mono text-slate-900 dark:text-white">{agentStatus.model}</span></>
+                                            ) : (
+                                                'Agent not configured. Set AGENT_API_KEY environment variable.'
+                                            )}
+                                        </span>
+                                    </div>
+                                )}
+
+                                <form onSubmit={handleRunAgent} className="space-y-4">
+                                    <Textarea
+                                        placeholder="Paste the Reddit post, tweet, or description of an app here...
+
+Example:
+Check out this cool app I built! It's a virtual AI pet that learns your habits.
+Live at: https://pixelpet.app
+
+Built with Claude and React. Features include:
+- Customizable pet appearance
+- Daily mood tracking
+- Mini games"
+                                        value={agentPrompt}
+                                        onChange={(e) => setAgentPrompt(e.target.value)}
+                                        className="min-h-[200px] font-mono text-sm"
+                                        disabled={agentRunning || !agentStatus?.configured}
+                                    />
+                                    <Button
+                                        type="submit"
+                                        className="gap-2 bg-primary hover:bg-primary-dark"
+                                        disabled={agentRunning || !agentStatus?.configured || !agentPrompt.trim()}
+                                    >
+                                        {agentRunning ? (
+                                            <>
+                                                <Loader2 size={16} className="animate-spin" />
+                                                Running Agent...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Play size={16} />
+                                                Run Agent
+                                            </>
+                                        )}
+                                    </Button>
+                                </form>
+                            </CardContent>
+                        </Card>
+
+                        {/* Agent Result */}
+                        {agentResult && (
+                            <Card className="bg-white dark:bg-[var(--card)] border-slate-200 dark:border-slate-800">
+                                <CardHeader className="pb-4">
+                                    <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                        {agentResult.success ? (
+                                            <Check size={18} className="text-green-500" />
+                                        ) : (
+                                            <X size={18} className="text-red-500" />
+                                        )}
+                                        {agentResult.success ? 'Agent Completed' : 'Agent Failed'}
+                                    </CardTitle>
+                                </CardHeader>
+                                <CardContent className="space-y-4">
+                                    {agentResult.app_ids.length > 0 && (
+                                        <div className="flex flex-wrap gap-2">
+                                            <span className="text-sm text-slate-600 dark:text-slate-400">Created apps:</span>
+                                            {agentResult.app_ids.map(id => (
+                                                <Badge
+                                                    key={id}
+                                                    className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 border-none cursor-pointer hover:bg-green-200"
+                                                    onClick={() => navigate(`/apps/${id}`)}
+                                                >
+                                                    App #{id} <ArrowUpRight size={12} className="ml-1" />
+                                                </Badge>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {agentResult.result && (
+                                        <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
+                                            <pre className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap font-mono">
+                                                {agentResult.result}
+                                            </pre>
+                                        </div>
+                                    )}
+                                    {agentResult.error && (
+                                        <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-xl border border-red-100 dark:border-red-800">
+                                            <pre className="text-sm text-red-700 dark:text-red-300 whitespace-pre-wrap">
+                                                {agentResult.error}
+                                            </pre>
+                                        </div>
+                                    )}
+                                </CardContent>
+                            </Card>
                         )}
                     </TabsContent>
                 </Tabs>
