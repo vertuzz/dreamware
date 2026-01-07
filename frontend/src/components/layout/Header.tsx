@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '~/contexts/AuthContext';
 import FeedbackModal from '~/components/common/FeedbackModal';
@@ -13,10 +13,26 @@ export default function Header({ onSearch }: HeaderProps) {
   const { user } = useAuth();
   const isLoggedIn = !!user;
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   const handleSubmitFeedback = async (type: FeedbackType, message: string) => {
     await feedbackService.submitFeedback({ type, message });
   };
+
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false);
+      }
+    };
+
+    if (isMobileMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [isMobileMenuOpen]);
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-[var(--border)] bg-white/80 dark:bg-[var(--background)]/90 backdrop-blur-md">
@@ -33,7 +49,7 @@ export default function Header({ onSearch }: HeaderProps) {
                 auto_awesome
               </span>
             </div>
-            <h2 className="text-xl font-bold tracking-tight text-[#0d111b] dark:text-white">
+            <h2 className="text-xl font-bold tracking-tight text-[#0d111b] dark:text-white hidden sm:block">
               Show Your App
             </h2>
           </Link>
@@ -53,7 +69,64 @@ export default function Header({ onSearch }: HeaderProps) {
         </div>
 
         {/* Right Actions */}
-        <div className="flex items-center gap-6">
+        <div className="flex items-center gap-3 sm:gap-6">
+          {/* Mobile Menu Button */}
+          <div className="relative lg:hidden" ref={mobileMenuRef}>
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="flex items-center justify-center size-10 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              aria-label="Toggle menu"
+            >
+              <span className="material-symbols-outlined text-[24px] text-[#0d111b] dark:text-white">
+                {isMobileMenuOpen ? 'close' : 'menu'}
+              </span>
+            </button>
+
+            {/* Mobile Dropdown Menu */}
+            {isMobileMenuOpen && (
+              <div className="absolute right-0 top-full mt-2 w-56 bg-white dark:bg-gray-900 rounded-xl shadow-lg border border-gray-200 dark:border-gray-700 py-2 z-50">
+                <Link
+                  to="/"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-[#0d111b] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[20px]">explore</span>
+                  Explore
+                </Link>
+                <Link
+                  to="/agent-instructions"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-[#0d111b] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[20px]">smart_toy</span>
+                  AI Agent
+                </Link>
+                {user?.is_admin && (
+                  <Link
+                    to="/admin"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 text-sm font-semibold text-primary hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+                    Admin
+                  </Link>
+                )}
+                {isLoggedIn && (
+                  <button
+                    onClick={() => {
+                      setIsMobileMenuOpen(false);
+                      setIsFeedbackOpen(true);
+                    }}
+                    className="flex items-center gap-3 px-4 py-3 w-full text-left text-sm font-semibold text-[#0d111b] dark:text-white hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[20px]">feedback</span>
+                    Feedback
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
           {/* Nav Links (Desktop) */}
           <nav className="hidden lg:flex items-center gap-6">
             <Link
