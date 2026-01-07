@@ -47,16 +47,16 @@ WORKDIR /app
 # Copy virtual environment from builder
 COPY --from=builder /app/.venv /app/.venv
 
-# Copy application code
-COPY --chown=appuser:appgroup . .
-
 # Set Playwright browsers path to a shared location accessible by appuser
 ENV PLAYWRIGHT_BROWSERS_PATH=/opt/playwright-browsers
 
-# Install Playwright browsers to shared location and set permissions
+# Install Playwright browsers BEFORE copying code (so it's cached)
 RUN mkdir -p /opt/playwright-browsers && \
     /app/.venv/bin/playwright install chromium && \
     chown -R appuser:appgroup /opt/playwright-browsers
+
+# Copy application code (changes here won't invalidate Playwright cache)
+COPY --chown=appuser:appgroup . .
 
 # Set environment variables
 ENV PATH="/app/.venv/bin:$PATH"
