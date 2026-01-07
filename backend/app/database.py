@@ -11,6 +11,9 @@ engine = create_async_engine(
     echo=False,
 )
 
+# Determine dialect at startup (avoids issues with checking during async requests)
+IS_POSTGRES = SQLALCHEMY_DATABASE_URL.startswith("postgresql")
+
 # Create async session maker
 AsyncSessionLocal = async_sessionmaker(
     engine,

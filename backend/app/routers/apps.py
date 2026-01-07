@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 from typing import List, Optional
 from datetime import datetime
 
-from app.database import get_db
+from app.database import get_db, IS_POSTGRES
 from app.models import App, User, Tool, Tag, AppMedia, AppStatus, Like, Comment, Review, DeadAppReport, ReportStatus
 from app.schemas import schemas
 from app.routers.auth import get_current_user, get_current_user_optional, require_admin
@@ -152,12 +152,12 @@ async def get_apps(
         likes_count = func.count(distinct(Like.id))
         comments_count = func.count(distinct(Comment.id))
         
-        # Handle SQLite vs Postgres for age calculation
-        if db.bind.dialect.name == "sqlite":
-            # julianday returns days, so multiply by 24 for hours
-            age_in_hours = (func.julianday('now') - func.julianday(App.created_at)) * 24
-        else:
+        # Handle SQLite vs Postgres for age calculation (determined at startup)
+        if IS_POSTGRES:
             age_in_hours = func.extract('epoch', func.now() - App.created_at) / 3600
+        else:
+            # SQLite: julianday returns days, so multiply by 24 for hours
+            age_in_hours = (func.julianday('now') - func.julianday(App.created_at)) * 24
         
         # Gravity algorithm
         trending_score = (likes_count + (comments_count * 2) + 1) / func.power(age_in_hours + 2, 1.8)
