@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import Header from '~/components/layout/Header';
 import { appService } from '~/lib/services/app-service';
 import { tagService } from '~/lib/services/tag-service';
@@ -16,9 +16,23 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '~/components/ui/tabs';
 import { useAuth } from '~/contexts/AuthContext';
 import { Clock, User, Box, Check, X, ArrowUpRight, MessageSquare, Tag, Wrench, Plus, Pencil, Trash2, AlertCircle, MessagesSquare, Link2Off, Bot, Play, Loader2 } from 'lucide-react';
 
+const VALID_TABS = ['claims', 'tags', 'tools', 'feedback', 'dead-reports', 'agent'] as const;
+type TabValue = typeof VALID_TABS[number];
+
 export default function AdminPortal() {
     const { user, isLoading: authLoading } = useAuth();
     const navigate = useNavigate();
+    const { tab } = useParams<{ tab?: string }>();
+
+    // Determine current tab from URL, default to 'claims'
+    const currentTab: TabValue = tab && VALID_TABS.includes(tab as TabValue) 
+        ? (tab as TabValue) 
+        : 'claims';
+
+    // Handle tab change - update URL
+    const handleTabChange = (value: string) => {
+        navigate(`/admin/${value}`, { replace: true });
+    };
 
     // Claims state
     const [claims, setClaims] = useState<OwnershipClaim[]>([]);
@@ -328,10 +342,10 @@ export default function AdminPortal() {
                     </div>
                 </div>
 
-                <Tabs defaultValue="claims" className="space-y-6">
-                    <TabsList className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1 h-auto">
-                        <TabsTrigger value="claims" className="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                            <Box size={16} />
+                <Tabs value={currentTab} onValueChange={handleTabChange} className="space-y-6">
+                    <TabsList className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1 h-auto flex flex-wrap gap-1">
+                        <TabsTrigger value="claims" className="gap-2 px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white flex-shrink-0">
+                            <Box size={16} className="hidden sm:block" />
                             Claims
                             {claims.length > 0 && (
                                 <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
@@ -339,38 +353,39 @@ export default function AdminPortal() {
                                 </Badge>
                             )}
                         </TabsTrigger>
-                        <TabsTrigger value="tags" className="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                            <Tag size={16} />
+                        <TabsTrigger value="tags" className="gap-2 px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white flex-shrink-0">
+                            <Tag size={16} className="hidden sm:block" />
                             Tags
                             <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                                 {tags.length}
                             </Badge>
                         </TabsTrigger>
-                        <TabsTrigger value="tools" className="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                            <Wrench size={16} />
+                        <TabsTrigger value="tools" className="gap-2 px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white flex-shrink-0">
+                            <Wrench size={16} className="hidden sm:block" />
                             Tools
                             <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                                 {tools.length}
                             </Badge>
                         </TabsTrigger>
-                        <TabsTrigger value="feedback" className="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                            <MessagesSquare size={16} />
+                        <TabsTrigger value="feedback" className="gap-2 px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white flex-shrink-0">
+                            <MessagesSquare size={16} className="hidden sm:block" />
                             Feedback
                             <Badge variant="secondary" className="ml-1 h-5 px-1.5 text-xs">
                                 {feedbackList.length}
                             </Badge>
                         </TabsTrigger>
-                        <TabsTrigger value="dead-reports" className="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                            <Link2Off size={16} />
-                            Dead Reports
+                        <TabsTrigger value="dead-reports" className="gap-2 px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white flex-shrink-0">
+                            <Link2Off size={16} className="hidden sm:block" />
+                            <span className="hidden sm:inline">Dead Reports</span>
+                            <span className="sm:hidden">Dead</span>
                             {deadReports.length > 0 && (
                                 <Badge variant="destructive" className="ml-1 h-5 px-1.5 text-xs">
                                     {deadReports.length}
                                 </Badge>
                             )}
                         </TabsTrigger>
-                        <TabsTrigger value="agent" className="gap-2 px-4 py-2 data-[state=active]:bg-primary data-[state=active]:text-white">
-                            <Bot size={16} />
+                        <TabsTrigger value="agent" className="gap-2 px-3 py-2 text-sm data-[state=active]:bg-primary data-[state=active]:text-white flex-shrink-0">
+                            <Bot size={16} className="hidden sm:block" />
                             Agent
                         </TabsTrigger>
                     </TabsList>

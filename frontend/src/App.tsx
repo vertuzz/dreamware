@@ -27,7 +27,7 @@ function App() {
       <Route path="/profile" element={<Profile />} />
       <Route path="/users/:username" element={<UserPage />} />
       <Route path="/admin" element={<AdminPortal />} />
-      <Route path="/admin/claims" element={<Navigate to="/admin" replace />} />
+      <Route path="/admin/:tab" element={<AdminPortal />} />
       <Route path="/agent-instructions" element={<AgentInstructions />} />
     </Routes>
   );
