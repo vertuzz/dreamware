@@ -5,7 +5,6 @@ from typing import Optional
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models import User
 from app.core.config import settings
 
 
@@ -14,7 +13,9 @@ class AgentDeps:
     """Dependencies injected into the agent for database access and user context."""
     
     db: AsyncSession
-    user: User
+    user_id: int
+    username: str
+    is_admin: bool
     headless: bool = field(default_factory=lambda: settings.AGENT_HEADLESS)
     
     # Cached context data (populated at bootstrap)

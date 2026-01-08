@@ -171,7 +171,7 @@ async def check_urls_exist(db, urls: list[str]) -> list[str]:
     return existing
 
 
-async def process_post(db, user: User, post: dict, dry_run: bool = False) -> dict:
+async def process_post(db, user_data: dict, post: dict, dry_run: bool = False) -> dict:
     """Process a single Reddit post through the agent."""
     title = post.get("title", "Unknown")
     permalink = f"https://reddit.com{post.get('permalink', '')}"
@@ -205,7 +205,7 @@ async def process_post(db, user: User, post: dict, dry_run: bool = False) -> dic
     # Build prompt and run agent
     prompt = build_agent_prompt(post)
     
-    deps = AgentDeps(db=db, user=user)
+    deps = AgentDeps(db=db, user_id=user_data["id"], username=user_data["username"], is_admin=user_data["is_admin"])
     result = await run_agent(prompt, deps)
     
     if result.get("success"):
@@ -245,7 +245,13 @@ async def main(limit: int = 50, dry_run: bool = False, subreddit: str = "SidePro
         # Get admin user
         try:
             admin = await get_admin_user(db, "alexavd@gmail.com")
-            logger.info(f"Using admin user: {admin.username} (id={admin.id})")
+            # Extract user data once to avoid lazy loading issues
+            admin_data = {
+                "id": admin.id,
+                "username": admin.username,
+                "is_admin": admin.is_admin,
+            }
+            logger.info(f"Using admin user: {admin_data['username']} (id={admin_data['id']})")
         except ValueError as e:
             logger.error(str(e))
             return
@@ -254,7 +260,7 @@ async def main(limit: int = 50, dry_run: bool = False, subreddit: str = "SidePro
             logger.info(f"\n[{i+1}/{len(posts_with_urls)}] Processing post...")
             
             try:
-                result = await process_post(db, admin, post, dry_run=dry_run)
+                result = await process_post(db, admin_data, post, dry_run=dry_run)
                 
                 if result.get("skipped"):
                     stats["skipped"] += 1
@@ -269,11 +275,6 @@ async def main(limit: int = 50, dry_run: bool = False, subreddit: str = "SidePro
             except Exception as e:
                 logger.exception(f"Error processing post: {e}")
                 stats["errors"] += 1
-            
-            # Rate limiting between agent runs
-            if not dry_run and i < len(posts_with_urls) - 1:
-                logger.info("  Waiting 2 seconds before next post...")
-                await asyncio.sleep(2)
     
     # Summary
     logger.info("\n" + "=" * 50)

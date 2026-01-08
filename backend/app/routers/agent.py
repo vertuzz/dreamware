@@ -55,7 +55,9 @@ async def run_submission_agent(
     # Create agent dependencies
     deps = AgentDeps(
         db=db,
-        user=admin_user,
+        user_id=admin_user.id,
+        username=admin_user.username,
+        is_admin=admin_user.is_admin,
         headless=settings.AGENT_HEADLESS,
     )
     

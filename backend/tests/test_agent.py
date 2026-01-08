@@ -47,7 +47,9 @@ def agent_deps(mock_db, mock_user):
     """Create agent dependencies for testing."""
     return AgentDeps(
         db=mock_db,
-        user=mock_user,
+        user_id=mock_user.id,
+        username=mock_user.username,
+        is_admin=mock_user.is_admin,
         headless=True,
     )
 

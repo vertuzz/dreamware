@@ -166,7 +166,7 @@ async def run_agent(prompt: str, deps: AgentDeps) -> dict:
     agent = get_agent()
     
     try:
-        logger.info(f"Starting agent run for user {deps.user.id}")
+        logger.info(f"Starting agent run for user {deps.user_id}")
         result = await agent.run(prompt, deps=deps)
         
         # Commit any database changes

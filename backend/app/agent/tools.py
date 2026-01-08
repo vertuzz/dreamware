@@ -74,7 +74,7 @@ async def get_my_apps(ctx: RunContext[AgentDeps]) -> list[dict]:
     
     result = await ctx.deps.db.execute(
         select(App)
-        .filter(App.creator_id == ctx.deps.user.id)
+        .filter(App.creator_id == ctx.deps.user_id)
         .order_by(App.created_at.desc())
         .limit(100)
     )
@@ -148,7 +148,7 @@ async def search_apps(
                 "id": a.creator.id,
                 "username": a.creator.username,
             } if a.creator else None,
-            "is_mine": a.creator_id == ctx.deps.user.id,
+            "is_mine": a.creator_id == ctx.deps.user_id,
         }
         for a in apps
     ]
@@ -212,7 +212,7 @@ async def create_app(
     # Agent-submitted apps are always marked as not owned by the submitter
     # since admin is submitting on behalf of someone else
     app = App(
-        creator_id=ctx.deps.user.id,
+        creator_id=ctx.deps.user_id,
         title=title,
         prompt_text=prompt_text,
         prd_text=prd_text,
@@ -308,7 +308,7 @@ async def update_app(
     result = await ctx.deps.db.execute(
         select(App)
         .options(selectinload(App.tools), selectinload(App.tags))
-        .filter(App.id == app_id, App.creator_id == ctx.deps.user.id)
+        .filter(App.id == app_id, App.creator_id == ctx.deps.user_id)
     )
     app = result.scalar()
     
