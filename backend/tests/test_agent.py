@@ -6,12 +6,13 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.agent.deps import AgentDeps
 from app.agent.tools import (
-    get_available_tools,
-    get_available_tags,
+    get_tags_and_tools,
     get_my_apps,
     search_apps,
     create_app,
     _generate_slug,
+    _check_browser_limit,
+    MAX_BROWSER_STEPS,
 )
 from app.models import User, Tool, Tag, App, AppStatus
 from app.utils import normalize_url
@@ -68,53 +69,81 @@ class TestGenerateSlug:
         assert len(_generate_slug(long_title)) <= 100
 
 
-class TestGetAvailableTools:
-    """Tests for get_available_tools function."""
+class TestBrowserStepLimit:
+    """Tests for browser step limiting."""
     
-    @pytest.mark.asyncio
-    async def test_returns_cached_tools(self, agent_deps):
-        """Should return cached tools if already populated."""
-        agent_deps.tools_list = [{"id": 1, "name": "Cursor"}]
+    def test_browser_limit_not_reached(self, agent_deps):
+        """Should allow browser calls when under limit."""
+        agent_deps.browser_step_count = 5
         ctx = MockRunContext(agent_deps)
         
-        result = await get_available_tools(ctx)
+        result = _check_browser_limit(ctx)
         
-        assert result == [{"id": 1, "name": "Cursor"}]
+        assert result is None
+        assert agent_deps.browser_step_count == 6
+    
+    def test_browser_limit_reached(self, agent_deps):
+        """Should return error when limit reached."""
+        agent_deps.browser_step_count = MAX_BROWSER_STEPS
+        ctx = MockRunContext(agent_deps)
+        
+        result = _check_browser_limit(ctx)
+        
+        assert result is not None
+        assert "error" in result
+        assert "Browser step limit" in result["error"]
+        # Count should not increment when limit reached
+        assert agent_deps.browser_step_count == MAX_BROWSER_STEPS
+    
+    def test_max_browser_steps_is_10(self):
+        """Verify MAX_BROWSER_STEPS is set to 10."""
+        assert MAX_BROWSER_STEPS == 10
+
+
+class TestGetTagsAndTools:
+    """Tests for get_tags_and_tools function."""
+    
+    @pytest.mark.asyncio
+    async def test_returns_cached_data(self, agent_deps):
+        """Should return cached data if already populated."""
+        agent_deps.tools_list = [{"id": 1, "name": "Cursor"}]
+        agent_deps.tags_list = [{"id": 1, "name": "AI-Powered"}]
+        ctx = MockRunContext(agent_deps)
+        
+        result = await get_tags_and_tools(ctx)
+        
+        assert result["tools"] == [{"id": 1, "name": "Cursor"}]
+        assert result["tags"] == [{"id": 1, "name": "AI-Powered"}]
         agent_deps.db.execute.assert_not_called()
     
     @pytest.mark.asyncio
     async def test_fetches_from_db(self, agent_deps):
-        """Should fetch tools from DB if not cached."""
+        """Should fetch both tools and tags from DB if not cached."""
         mock_tool = MagicMock(spec=Tool)
         mock_tool.id = 1
         mock_tool.name = "Claude Code"
         
-        mock_result = MagicMock()
-        mock_result.scalars.return_value.all.return_value = [mock_tool]
-        agent_deps.db.execute.return_value = mock_result
+        mock_tag = MagicMock(spec=Tag)
+        mock_tag.id = 1
+        mock_tag.name = "AI-Powered"
+        
+        # First call returns tools, second returns tags
+        mock_result_tools = MagicMock()
+        mock_result_tools.scalars.return_value.all.return_value = [mock_tool]
+        
+        mock_result_tags = MagicMock()
+        mock_result_tags.scalars.return_value.all.return_value = [mock_tag]
+        
+        agent_deps.db.execute.side_effect = [mock_result_tools, mock_result_tags]
         
         ctx = MockRunContext(agent_deps)
-        result = await get_available_tools(ctx)
+        result = await get_tags_and_tools(ctx)
         
-        assert len(result) == 1
-        assert result[0]["id"] == 1
-        assert result[0]["name"] == "Claude Code"
-        agent_deps.db.execute.assert_called_once()
-
-
-class TestGetAvailableTags:
-    """Tests for get_available_tags function."""
-    
-    @pytest.mark.asyncio
-    async def test_returns_cached_tags(self, agent_deps):
-        """Should return cached tags if already populated."""
-        agent_deps.tags_list = [{"id": 1, "name": "AI-Powered"}]
-        ctx = MockRunContext(agent_deps)
-        
-        result = await get_available_tags(ctx)
-        
-        assert result == [{"id": 1, "name": "AI-Powered"}]
-        agent_deps.db.execute.assert_not_called()
+        assert len(result["tools"]) == 1
+        assert result["tools"][0]["name"] == "Claude Code"
+        assert len(result["tags"]) == 1
+        assert result["tags"][0]["name"] == "AI-Powered"
+        assert agent_deps.db.execute.call_count == 2
 
 
 class TestNormalizeUrl:

@@ -16,6 +16,10 @@ from app.core.config import settings
 from app.utils import normalize_url
 
 
+# Browser step limit
+MAX_BROWSER_STEPS = 10
+
+
 def _generate_slug(title: str) -> str:
     """Generate a URL-friendly slug from a title."""
     slug = title.lower().strip()
@@ -24,32 +28,39 @@ def _generate_slug(title: str) -> str:
     return slug[:100]  # Limit length
 
 
-async def get_available_tools(ctx: RunContext[AgentDeps]) -> list[dict]:
-    """Get all available tools (how apps are built) from the database.
-    
-    Returns a list of tools with their IDs and names. Use these IDs when creating apps.
-    """
-    if ctx.deps.tools_list:
-        return ctx.deps.tools_list
-    
-    result = await ctx.deps.db.execute(select(Tool).order_by(Tool.id))
-    tools = result.scalars().all()
-    ctx.deps.tools_list = [{"id": t.id, "name": t.name} for t in tools]
-    return ctx.deps.tools_list
+def _check_browser_limit(ctx: RunContext[AgentDeps]) -> dict | None:
+    """Check if browser step limit reached. Returns error dict if exceeded."""
+    if ctx.deps.browser_step_count >= MAX_BROWSER_STEPS:
+        return {"error": f"Browser step limit ({MAX_BROWSER_STEPS}) reached. Create the app with information gathered so far."}
+    ctx.deps.browser_step_count += 1
+    return None
 
 
-async def get_available_tags(ctx: RunContext[AgentDeps]) -> list[dict]:
-    """Get all available tags (categories) from the database.
+async def get_tags_and_tools(ctx: RunContext[AgentDeps]) -> dict:
+    """Get all available tags (categories) and tools (how apps are built) from the database.
     
-    Returns a list of tags with their IDs and names. Use these IDs when creating apps.
+    Returns a dict with:
+    - tags: list of tags with IDs and names for categorizing apps
+    - tools: list of tools with IDs and names for specifying how apps are built
+    
+    Use these IDs when creating apps.
     """
-    if ctx.deps.tags_list:
-        return ctx.deps.tags_list
+    # Fetch tools if not cached
+    if not ctx.deps.tools_list:
+        result = await ctx.deps.db.execute(select(Tool).order_by(Tool.id))
+        tools = result.scalars().all()
+        ctx.deps.tools_list = [{"id": t.id, "name": t.name} for t in tools]
     
-    result = await ctx.deps.db.execute(select(Tag).order_by(Tag.id))
-    tags = result.scalars().all()
-    ctx.deps.tags_list = [{"id": t.id, "name": t.name} for t in tags]
-    return ctx.deps.tags_list
+    # Fetch tags if not cached
+    if not ctx.deps.tags_list:
+        result = await ctx.deps.db.execute(select(Tag).order_by(Tag.id))
+        tags = result.scalars().all()
+        ctx.deps.tags_list = [{"id": t.id, "name": t.name} for t in tags]
+    
+    return {
+        "tags": ctx.deps.tags_list,
+        "tools": ctx.deps.tools_list,
+    }
 
 
 async def get_my_apps(ctx: RunContext[AgentDeps]) -> list[dict]:
@@ -156,18 +167,20 @@ async def create_app(
 ) -> dict:
     """Create a new app listing on Show Your App.
     
+    Automatically uploads any screenshots taken during browser exploration.
+    
     Args:
         title: App name (be specific, not generic)
         prompt_text: 1-2 sentence hook that sells the app
         prd_text: Full description in HTML format (use <h2>, <p>, <ul>, <li> tags)
         status: One of "Concept", "WIP", or "Live"
-        tool_ids: List of tool IDs (from get_available_tools)
-        tag_ids: List of tag IDs (from get_available_tags)
+        tool_ids: List of tool IDs (from get_tags_and_tools)
+        tag_ids: List of tag IDs (from get_tags_and_tools)
         app_url: URL to the live app (required if status is "Live")
         youtube_url: Optional YouTube demo video URL
         
     Returns:
-        Dict with created app ID and slug, or error message.
+        Dict with created app ID, slug, media upload results, or error message.
     """
     # Validate status
     try:
@@ -229,13 +242,33 @@ async def create_app(
     # Track created app
     ctx.deps.created_app_ids.append(app.id)
     
-    return {
+    # Auto-upload saved screenshots
+    media_uploaded = 0
+    media_errors = []
+    
+    for screenshot_path in ctx.deps.saved_screenshots:
+        upload_result = await _upload_and_attach_media(ctx, app.id, screenshot_path)
+        if upload_result.get("success"):
+            media_uploaded += 1
+        else:
+            media_errors.append(f"{Path(screenshot_path).name}: {upload_result.get('error', 'Unknown error')}")
+    
+    # Clear screenshots after upload attempt
+    ctx.deps.saved_screenshots.clear()
+    
+    result = {
         "success": True,
         "app_id": app.id,
         "slug": app.slug,
         "title": app.title,
         "url": f"https://show-your.app/apps/{app.slug}",
+        "media_uploaded": media_uploaded,
     }
+    
+    if media_errors:
+        result["media_errors"] = media_errors
+    
+    return result
 
 
 async def update_app(
@@ -335,20 +368,10 @@ async def update_app(
     }
 
 
-async def get_presigned_url(
-    ctx: RunContext[AgentDeps],
-    filename: str,
-    content_type: str,
-) -> dict:
-    """Get a presigned URL for uploading media to S3.
-    
-    Args:
-        filename: Name of the file (e.g., "screenshot1.png")
-        content_type: MIME type (e.g., "image/png")
-        
-    Returns:
-        Dict with upload_url, download_url, and file_key.
-    """
+# Private helper functions for media upload (used internally by create_app)
+
+async def _get_presigned_url(filename: str, content_type: str) -> dict:
+    """Get a presigned URL for uploading media to S3 (internal helper)."""
     import boto3
     from botocore.config import Config
     import uuid
@@ -396,22 +419,8 @@ async def get_presigned_url(
     }
 
 
-async def upload_file_to_s3(
-    ctx: RunContext[AgentDeps],
-    file_path: str,
-    upload_url: str,
-    content_type: str,
-) -> dict:
-    """Upload a file to S3 using a presigned URL.
-    
-    Args:
-        file_path: Path to the file on disk (from take_screenshot)
-        upload_url: The upload_url from get_presigned_url
-        content_type: MIME type (e.g., "image/png")
-        
-    Returns:
-        Dict with success status.
-    """
+async def _upload_file_to_s3(file_path: str, upload_url: str, content_type: str) -> dict:
+    """Upload a file to S3 using a presigned URL (internal helper)."""
     path = Path(file_path)
     if not path.exists():
         return {"error": f"File not found: {file_path}"}
@@ -437,38 +446,44 @@ async def upload_file_to_s3(
         return {"error": f"Upload failed: {str(e)}"}
 
 
-async def attach_media_to_app(
-    ctx: RunContext[AgentDeps],
-    app_id: int,
-    media_url: str,
-) -> dict:
-    """Attach uploaded media to an app listing.
+async def _upload_and_attach_media(ctx: RunContext[AgentDeps], app_id: int, file_path: str) -> dict:
+    """Upload a file to S3 and attach it to an app (internal helper).
     
-    Args:
-        app_id: ID of the app
-        media_url: The download_url from get_presigned_url
-        
-    Returns:
-        Dict with success status and media ID.
+    Combines presigned URL generation, S3 upload, and AppMedia record creation.
     """
-    # Verify app belongs to user
-    result = await ctx.deps.db.execute(
-        select(App).filter(App.id == app_id, App.creator_id == ctx.deps.user.id)
-    )
-    app = result.scalar()
+    path = Path(file_path)
+    filename = path.name
     
-    if not app:
-        return {"error": f"App with ID {app_id} not found or you don't have permission."}
+    # Determine content type from extension
+    ext = path.suffix.lower()
+    content_type_map = {
+        ".png": "image/png",
+        ".jpg": "image/jpeg",
+        ".jpeg": "image/jpeg",
+        ".gif": "image/gif",
+        ".webp": "image/webp",
+    }
+    content_type = content_type_map.get(ext, "image/png")
+    
+    # Get presigned URL
+    presigned = await _get_presigned_url(filename, content_type)
+    if not presigned.get("success"):
+        return presigned
+    
+    # Upload file
+    upload_result = await _upload_file_to_s3(file_path, presigned["upload_url"], content_type)
+    if not upload_result.get("success"):
+        return upload_result
     
     # Create media record
-    media = AppMedia(app_id=app_id, media_url=media_url)
+    media = AppMedia(app_id=app_id, media_url=presigned["download_url"])
     ctx.deps.db.add(media)
     await ctx.deps.db.flush()
     
     return {
         "success": True,
         "media_id": media.id,
-        "app_id": app_id,
+        "media_url": presigned["download_url"],
     }
 
 
@@ -485,6 +500,10 @@ async def browser_navigate(ctx: RunContext[AgentDeps], url: str) -> dict:
     Returns:
         Dict with page title and success status.
     """
+    limit_error = _check_browser_limit(ctx)
+    if limit_error:
+        return limit_error
+    
     browser = await get_browser(headless=ctx.deps.headless)
     return await browser.navigate(url)
 
@@ -492,14 +511,26 @@ async def browser_navigate(ctx: RunContext[AgentDeps], url: str) -> dict:
 async def browser_screenshot(ctx: RunContext[AgentDeps], name: str) -> dict:
     """Take a screenshot of the current page.
     
+    Screenshots are automatically uploaded when you call create_app.
+    
     Args:
         name: Name for the screenshot file (e.g., "main-page", "feature-1")
         
     Returns:
-        Dict with file_path (use this with upload_file_to_s3).
+        Dict with file_path (automatically uploaded on create_app).
     """
+    limit_error = _check_browser_limit(ctx)
+    if limit_error:
+        return limit_error
+    
     browser = await get_browser(headless=ctx.deps.headless)
-    return await browser.take_screenshot(name)
+    result = await browser.take_screenshot(name)
+    
+    # Track screenshot for auto-upload in create_app
+    if result.get("success") and result.get("file_path"):
+        ctx.deps.saved_screenshots.append(result["file_path"])
+    
+    return result
 
 
 async def browser_get_content(ctx: RunContext[AgentDeps]) -> dict:
@@ -510,6 +541,10 @@ async def browser_get_content(ctx: RunContext[AgentDeps]) -> dict:
     Returns:
         Dict with page title, URL, and text content.
     """
+    limit_error = _check_browser_limit(ctx)
+    if limit_error:
+        return limit_error
+    
     browser = await get_browser(headless=ctx.deps.headless)
     return await browser.get_page_content()
 
@@ -523,6 +558,10 @@ async def browser_click(ctx: RunContext[AgentDeps], selector: str) -> dict:
     Returns:
         Dict with success status.
     """
+    limit_error = _check_browser_limit(ctx)
+    if limit_error:
+        return limit_error
+    
     browser = await get_browser(headless=ctx.deps.headless)
     return await browser.click(selector)
 
@@ -536,21 +575,21 @@ async def browser_scroll(ctx: RunContext[AgentDeps], direction: str = "down") ->
     Returns:
         Dict with success status.
     """
+    limit_error = _check_browser_limit(ctx)
+    if limit_error:
+        return limit_error
+    
     browser = await get_browser(headless=ctx.deps.headless)
     return await browser.scroll(direction)
 
 
 # Export all tools for registration
 ALL_TOOLS = [
-    get_available_tools,
-    get_available_tags,
+    get_tags_and_tools,
     get_my_apps,
     search_apps,
     create_app,
     update_app,
-    get_presigned_url,
-    upload_file_to_s3,
-    attach_media_to_app,
     browser_navigate,
     browser_screenshot,
     browser_get_content,
