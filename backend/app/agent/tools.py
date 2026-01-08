@@ -164,6 +164,7 @@ async def create_app(
     tag_ids: list[int],
     app_url: Optional[str] = None,
     youtube_url: Optional[str] = None,
+    post_url: Optional[str] = None,
 ) -> dict:
     """Create a new app listing on Show Your App.
     
@@ -178,6 +179,7 @@ async def create_app(
         tag_ids: List of tag IDs (from get_tags_and_tools)
         app_url: URL to the live app (required if status is "Live")
         youtube_url: Optional YouTube demo video URL
+        post_url: Optional source URL (e.g., Reddit post permalink) for tracking
         
     Returns:
         Dict with created app ID, slug, media upload results, or error message.
@@ -218,6 +220,7 @@ async def create_app(
         slug=slug,
         app_url=app_url,
         youtube_url=youtube_url,
+        post_url=post_url,
         is_agent_submitted=True,
         is_owner=False,
     )

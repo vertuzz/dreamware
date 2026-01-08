@@ -157,6 +157,9 @@ class App(Base):
     # Dead app tracking
     is_dead: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
     
+    # Source tracking for ingested posts (e.g., Reddit permalink)
+    post_url: Mapped[Optional[str]] = mapped_column(String(512), nullable=True, index=True)
+    
     status: Mapped[AppStatus] = mapped_column(Enum(AppStatus), default=AppStatus.CONCEPT, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
 
