@@ -7,6 +7,7 @@ from app.database import get_db
 from app.models import Like, User, App, Comment, Notification, NotificationType
 from app.routers.auth import get_current_user
 from app.services.reputation import update_reputation, LIKE_POINTS
+from app.services.telegram import notify_like
 
 router = APIRouter()
 
@@ -26,6 +27,7 @@ async def like_app(
     
     try:
         await db.commit()
+        notify_like(current_user.username, app.title)
         # Notify
         if app.creator_id != current_user.id:
             notification = Notification(

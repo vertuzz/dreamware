@@ -8,6 +8,7 @@ from app.database import get_db
 from app.models import Feedback, User
 from app.schemas import schemas
 from app.routers.auth import get_current_user
+from app.services.telegram import notify_feedback
 
 router = APIRouter()
 
@@ -27,6 +28,7 @@ async def create_feedback(
     db.add(feedback)
     await db.commit()
     await db.refresh(feedback)
+    notify_feedback(current_user.username, feedback_in.type, feedback_in.message)
     return feedback
 
 

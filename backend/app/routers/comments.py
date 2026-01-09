@@ -9,6 +9,7 @@ from app.models import Comment, User, App, Notification, NotificationType, Comme
 from app.schemas import schemas
 from app.routers.auth import get_current_user, get_current_user_optional
 from app.services.reputation import update_reputation, COMMENT_VOTE_POINTS
+from app.services.telegram import notify_comment
 
 router = APIRouter()
 
@@ -113,6 +114,7 @@ async def create_comment(
 
     await db.commit()
     await db.refresh(db_comment)
+    notify_comment(current_user.username, app.title, comment_in.content)
     db_comment.user_vote = 0 # New comment has no vote from creator yet
     return db_comment
 

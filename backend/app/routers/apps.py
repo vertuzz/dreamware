@@ -10,6 +10,7 @@ from app.models import App, User, Tool, Tag, AppMedia, AppStatus, Like, Comment,
 from app.schemas import schemas
 from app.routers.auth import get_current_user, get_current_user_optional, require_admin
 from app.utils import slugify, generate_unique_slug, normalize_url
+from app.services.telegram import notify_app_created
 
 router = APIRouter()
 

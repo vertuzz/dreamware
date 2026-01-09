@@ -41,6 +41,9 @@ services:
       AGENT_API_KEY: ${AGENT_API_KEY:-}
       AGENT_MODEL: ${AGENT_MODEL:-gpt-4o}
       AGENT_HEADLESS: ${AGENT_HEADLESS:-true}
+      # Telegram Admin Notifications
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:-}
+      TELEGRAM_CHAT_ID: ${TELEGRAM_CHAT_ID:-}
       # Observability
       LOGFIRE_TOKEN: ${LOGFIRE_TOKEN:-}
     depends_on:

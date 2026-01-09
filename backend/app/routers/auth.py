@@ -14,6 +14,7 @@ from app.schemas import schemas
 from app.core import security
 from app.core.security import SECRET_KEY, ALGORITHM, generate_api_key
 from app.core.config import settings
+from app.services.telegram import notify_new_user
 
 router = APIRouter()
 
@@ -153,6 +154,7 @@ async def google_login(request: schemas.SocialLoginRequest, db: AsyncSession = D
         select(User).options(selectinload(User.links)).filter(User.google_id == google_id)
     )
     user = result.scalars().first()
+    is_new_user = False
     if not user:
         result = await db.execute(
             select(User).options(selectinload(User.links)).filter(User.email == email)
@@ -183,7 +185,10 @@ async def google_login(request: schemas.SocialLoginRequest, db: AsyncSession = D
                 reputation_score=0.0
             )
             db.add(user)
+            is_new_user = True
         await db.commit()
+        if is_new_user:
+            notify_new_user(username, "Google")
         # Reload with eager loading
         result = await db.execute(
             select(User).options(selectinload(User.links)).filter(User.id == user.id)
@@ -254,6 +259,7 @@ async def github_login(request: schemas.SocialLoginRequest, db: AsyncSession = D
         select(User).options(selectinload(User.links)).filter(User.github_id == github_id)
     )
     user = result.scalars().first()
+    is_new_user = False
     if not user:
         result = await db.execute(
             select(User).options(selectinload(User.links)).filter(User.email == email)
@@ -284,7 +290,10 @@ async def github_login(request: schemas.SocialLoginRequest, db: AsyncSession = D
                 reputation_score=0.0
             )
             db.add(user)
+            is_new_user = True
         await db.commit()
+        if is_new_user:
+            notify_new_user(username, "GitHub")
         # Reload with eager loading
         result = await db.execute(
             select(User).options(selectinload(User.links)).filter(User.id == user.id)

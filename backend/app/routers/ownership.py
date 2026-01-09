@@ -9,6 +9,7 @@ from app.database import get_db
 from app.models import App, User, OwnershipClaim, ClaimStatus, Notification, NotificationType
 from app.schemas import schemas
 from app.routers.auth import get_current_user, require_admin
+from app.services.telegram import notify_ownership_claim
 
 router = APIRouter()
 
@@ -59,6 +60,7 @@ async def claim_ownership(
     
     await db.commit()
     await db.refresh(db_claim)
+    notify_ownership_claim(current_user.username, app.title)
     return db_claim
 
 @router.get("/ownership-claims", response_model=List[schemas.OwnershipClaimWithDetails])
