@@ -67,6 +67,10 @@ else
     ssh $SERVER "cd $APP_DIR && docker compose -f docker-compose.prod.yml build $BUILD_OPTS && docker compose -f docker-compose.prod.yml up -d"
 fi
 
+# Clean up old/dangling images to prevent disk bloat
+echo "Cleaning up unused images..."
+ssh $SERVER "docker image prune -f && docker builder prune -f --keep-storage=2GB"
+
 # Show status
 echo ""
 ssh $SERVER "cd $APP_DIR && docker compose -f docker-compose.prod.yml ps"
