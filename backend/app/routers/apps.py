@@ -10,7 +10,7 @@ from app.models import App, User, Tool, Tag, AppMedia, AppStatus, Like, Comment,
 from app.schemas import schemas
 from app.routers.auth import get_current_user, get_current_user_optional, require_admin
 from app.utils import slugify, generate_unique_slug, normalize_url
-from app.services.telegram import notify_app_created
+from app.services.telegram import notify_app_created, notify_dead_link_report
 
 router = APIRouter()
 
@@ -540,6 +540,10 @@ async def report_dead_app(
     db.add(db_report)
     await db.commit()
     await db.refresh(db_report)
+    
+    # Notify admin via Telegram
+    notify_dead_link_report(current_user.username, db_app.title, report_in.reason)
+    
     return db_report
 
 

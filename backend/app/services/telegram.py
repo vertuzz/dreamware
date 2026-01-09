@@ -107,3 +107,12 @@ def notify_feedback(username: str, feedback_type: str, message_preview: str) -> 
     preview = message_preview[:50] + "..." if len(message_preview) > 50 else message_preview
     message = f"📝 Feedback ({_escape_html(feedback_type)}) from <b>{_escape_html(username)}</b>: {_escape_html(preview)}"
     asyncio.create_task(_send_telegram_message(message))
+
+
+def notify_dead_link_report(username: str, app_title: str, reason: str | None) -> None:
+    """Notify admin of dead link report submission."""
+    message = f"⚠️ Dead link report: <b>{_escape_html(username)}</b> reported <b>{_escape_html(app_title)}</b>"
+    if reason:
+        preview = reason[:50] + "..." if len(reason) > 50 else reason
+        message += f"\nReason: {_escape_html(preview)}"
+    asyncio.create_task(_send_telegram_message(message))
