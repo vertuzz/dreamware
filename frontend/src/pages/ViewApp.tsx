@@ -3,6 +3,7 @@ import { useParams, Link, useNavigate } from 'react-router-dom';
 import { appService } from '~/lib/services/app-service';
 import type { App, Comment } from '~/lib/types';
 import { Header } from '~/components/layout';
+import { useAppCache } from '~/contexts/AppCacheContext';
 import {
     AppMediaGallery,
     AppActionPanel,
@@ -95,6 +96,7 @@ function AppNotFound() {
 export default function ViewApp() {
     const { slug } = useParams<{ slug: string }>();
     const navigate = useNavigate();
+    const { clearCache } = useAppCache();
     const [app, setApp] = useState<App | null>(null);
     const [comments, setComments] = useState<Comment[]>([]);
     const [loading, setLoading] = useState(true);
@@ -188,6 +190,8 @@ export default function ViewApp() {
         try {
             await appService.deleteApp(app.id);
             setIsDeleteModalOpen(false);
+            // Clear the app cache so Home page fetches fresh data
+            clearCache();
             navigate('/', { replace: true });
         } catch (err) {
             console.error('Failed to delete app:', err);
