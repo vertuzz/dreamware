@@ -96,6 +96,103 @@ The test suite uses a dedicated PostgreSQL test database. The database is automa
 uv run pytest
 ```
 
+## Reddit Ingestion
+
+The platform includes a system for ingesting posts from Reddit (r/SideProject) and automatically creating app listings using an AI agent.
+
+### How It Works
+
+1. **Download posts locally** — Fetches Reddit posts from your machine (avoids Reddit's IP blocking of cloud servers)
+2. **Submit to production API** — Sends posts to the production server as a background job
+3. **Background worker processes** — Server-side worker picks up the job and runs the AI agent for each post
+4. **Job tracking** — Monitor progress, view logs, and cancel jobs via API
+
+### Quick Start
+
+```bash
+# Full workflow: download + submit to production
+./scripts/ingest_reddit_prod.sh --limit 50
+
+# Or step by step:
+uv run python scripts/download_reddit_posts.py --limit 50
+uv run python scripts/submit_to_prod.py reddit_posts_SideProject_*.ndjson
+```
+
+### Configuration
+
+Add these to `.env.production`:
+
+```env
+PROD_API_URL=https://your-domain.com/api   # Production API base URL
+ADMIN_TOKEN=your_api_key_here              # Admin user's API key (from profile settings)
+```
+
+### Available Scripts
+
+| Script | Description |
+|--------|-------------|
+| `scripts/ingest_reddit_prod.sh` | Full workflow: download locally + submit to prod |
+| `scripts/download_reddit_posts.py` | Download Reddit posts to NDJSON file |
+| `scripts/submit_to_prod.py` | Submit NDJSON file to production API |
+
+### Script Options
+
+```bash
+# ingest_reddit_prod.sh
+./scripts/ingest_reddit_prod.sh --limit 50          # Max posts to fetch
+./scripts/ingest_reddit_prod.sh --subreddit vibecoding  # Different subreddit
+./scripts/ingest_reddit_prod.sh --file posts.ndjson # Skip download, use existing file
+
+# download_reddit_posts.py
+uv run python scripts/download_reddit_posts.py --limit 100 --subreddit SideProject --output my_posts.ndjson
+
+# submit_to_prod.py
+uv run python scripts/submit_to_prod.py posts.ndjson --api-url https://api.example.com --subreddit SideProject
+```
+
+### Job Management API
+
+All endpoints require admin authentication (API key via `X-API-Key` header or JWT via `Authorization: Bearer`).
+
+```bash
+# Create job (submit posts for processing)
+curl -X POST https://your-domain.com/api/jobs/ingestion \
+  -H "X-API-Key: $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"posts": [...], "subreddit": "SideProject"}'
+
+# List all jobs
+curl https://your-domain.com/api/jobs/ingestion \
+  -H "X-API-Key: $ADMIN_TOKEN"
+
+# Get job status and logs
+curl https://your-domain.com/api/jobs/ingestion/1 \
+  -H "X-API-Key: $ADMIN_TOKEN"
+
+# Cancel a running job
+curl -X POST https://your-domain.com/api/jobs/ingestion/1/cancel \
+  -H "X-API-Key: $ADMIN_TOKEN"
+```
+
+### Job Status Values
+
+| Status | Description |
+|--------|-------------|
+| `pending` | Job created, waiting for worker to pick up |
+| `running` | Worker is processing posts |
+| `completed` | All posts processed successfully |
+| `failed` | Job encountered a fatal error |
+| `cancelled` | Job was cancelled by user |
+
+### Background Worker
+
+The background worker runs automatically when the backend starts:
+- Polls for pending jobs every 5 seconds
+- Processes posts sequentially through the AI agent
+- Updates job progress after each post
+- Checks for cancellation between posts
+- Auto-deletes jobs older than 30 days
+
 ## Project Structure
 - `app/`: Main application code.
   - `agent/`: Pydantic AI agent for automated app submission (admin-only).

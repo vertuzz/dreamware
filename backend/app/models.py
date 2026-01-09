@@ -323,3 +323,60 @@ class DeadAppReport(Base):
 
     app: Mapped["App"] = relationship("App")
     reporter: Mapped["User"] = relationship("User")
+
+
+class JobStatus(str, enum.Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    COMPLETED = "completed"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+class IngestionJob(Base):
+    """Background job for processing Reddit posts through the agent."""
+    __tablename__ = "ingestion_jobs"
+
+    id: Mapped[int] = mapped_column(primary_key=True, index=True)
+    
+    # Job configuration
+    subreddit: Mapped[str] = mapped_column(String(100), nullable=False, default="SideProject")
+    
+    # Job status
+    status: Mapped[JobStatus] = mapped_column(
+        Enum(JobStatus, values_callable=lambda x: [e.value for e in x]),
+        default=JobStatus.PENDING, index=True
+    )
+    
+    # Progress tracking
+    total_posts: Mapped[int] = mapped_column(default=0)
+    processed_posts: Mapped[int] = mapped_column(default=0)
+    created_apps: Mapped[int] = mapped_column(default=0)
+    skipped_posts: Mapped[int] = mapped_column(default=0)
+    error_count: Mapped[int] = mapped_column(default=0)
+    
+    # Input data: list of posts to process
+    posts_data: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    
+    # Results
+    created_app_ids: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    error_message: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    log_entries: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
+    
+    # Cancellation support
+    cancel_requested: Mapped[bool] = mapped_column(default=False, index=True)
+    
+    # Ownership
+    created_by_id: Mapped[int] = mapped_column(ForeignKey("users.id"), index=True)
+    created_by: Mapped["User"] = relationship("User")
+    
+    # Timestamps
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now(), index=True
+    )
+    started_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    completed_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )

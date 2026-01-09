@@ -1,86 +1,108 @@
 #!/bin/bash
-# Run Reddit ingestion locally but connected to production database via SSH tunnel
-# This avoids Reddit's IP blocking of cloud servers while using prod data
+# Download Reddit posts locally and submit to production server for processing
+# This avoids Reddit's IP blocking of cloud servers by fetching locally
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 BACKEND_DIR="$(dirname "$SCRIPT_DIR")"
 
-SERVER="root@49.13.204.222"
-LOCAL_PORT=54321
+# Parse arguments
+LIMIT=50
+SUBREDDIT="SideProject"
+POSTS_FILE=""
 
-# Parse arguments (pass through to Python script)
-PYTHON_ARGS="$@"
-if [ -z "$PYTHON_ARGS" ]; then
-    PYTHON_ARGS="--limit 50"
-fi
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --limit)
+            LIMIT="$2"
+            shift 2
+            ;;
+        --subreddit)
+            SUBREDDIT="$2"
+            shift 2
+            ;;
+        --file)
+            POSTS_FILE="$2"
+            shift 2
+            ;;
+        *)
+            echo "Unknown option: $1"
+            echo "Usage: $0 [--limit N] [--subreddit NAME] [--file posts.ndjson]"
+            echo ""
+            echo "Options:"
+            echo "  --limit N          Max posts to fetch (default: 50)"
+            echo "  --subreddit NAME   Subreddit to scrape (default: SideProject)"
+            echo "  --file FILE        Skip download, use existing NDJSON file"
+            exit 1
+            ;;
+    esac
+done
 
-echo "=== Reddit Ingestion (Local -> Prod DB) ==="
-echo "Args: $PYTHON_ARGS"
+echo "=== Reddit Ingestion (Local Download -> Prod API) ==="
+echo ""
 
-# Get the Docker container's IP for the database
-echo "Getting DB container IP..."
-DB_CONTAINER_IP=$(ssh $SERVER "docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' vibe-hub-db")
-echo "DB container IP: $DB_CONTAINER_IP"
-
-# Check if tunnel already exists on this port
-if lsof -i :$LOCAL_PORT >/dev/null 2>&1; then
-    echo "Port $LOCAL_PORT already in use, killing existing process..."
-    kill $(lsof -t -i :$LOCAL_PORT) 2>/dev/null || true
-    sleep 1
-fi
-
-# Start SSH tunnel to prod database (through Docker container IP)
-echo "Starting SSH tunnel to prod database..."
-ssh -f -N -L $LOCAL_PORT:$DB_CONTAINER_IP:5432 $SERVER
-TUNNEL_PID=$(lsof -t -i :$LOCAL_PORT 2>/dev/null || echo "")
-echo "SSH tunnel established (PID: $TUNNEL_PID)"
-
-# Cleanup function
-cleanup() {
-    if [ -n "$TUNNEL_PID" ]; then
-        echo "Closing SSH tunnel..."
-        kill $TUNNEL_PID 2>/dev/null || true
-    fi
-}
-trap cleanup EXIT
-
-# Get prod database credentials from .env.production
+# Load production config
 if [ -f "$BACKEND_DIR/../.env.production" ]; then
-    # Extract Postgres credentials
-    POSTGRES_USER=$(grep "^POSTGRES_USER=" "$BACKEND_DIR/../.env.production" | cut -d'=' -f2-)
-    POSTGRES_PASSWORD=$(grep "^POSTGRES_PASSWORD=" "$BACKEND_DIR/../.env.production" | cut -d'=' -f2-)
-    POSTGRES_DB=$(grep "^POSTGRES_DB=" "$BACKEND_DIR/../.env.production" | cut -d'=' -f2-)
+    export PROD_API_URL=$(grep "^PROD_API_URL=" "$BACKEND_DIR/../.env.production" | cut -d'=' -f2-)
+    export ADMIN_TOKEN=$(grep "^ADMIN_TOKEN=" "$BACKEND_DIR/../.env.production" | cut -d'=' -f2-)
     
-    # Build DATABASE_URL with tunneled connection
-    LOCAL_DB_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@localhost:${LOCAL_PORT}/${POSTGRES_DB}"
+    if [ -z "$PROD_API_URL" ]; then
+        echo "ERROR: PROD_API_URL not found in .env.production"
+        exit 1
+    fi
+    if [ -z "$ADMIN_TOKEN" ]; then
+        echo "ERROR: ADMIN_TOKEN not found in .env.production"
+        exit 1
+    fi
     
-    echo "Using tunneled connection to prod database"
+    echo "Loaded config from .env.production"
+    echo "API URL: $PROD_API_URL"
 else
     echo "ERROR: .env.production not found"
     exit 1
 fi
 
-# Also get other required env vars from .env.production
-export AGENT_API_KEY=$(grep "^AGENT_API_KEY=" "$BACKEND_DIR/../.env.production" | cut -d'=' -f2-)
-export AGENT_API_BASE=$(grep "^AGENT_API_BASE=" "$BACKEND_DIR/../.env.production" | cut -d'=' -f2-)
-export AGENT_MODEL=$(grep "^AGENT_MODEL=" "$BACKEND_DIR/../.env.production" | cut -d'=' -f2- || echo "gpt-4o")
-export S3_BUCKET=$(grep "^S3_BUCKET=" "$BACKEND_DIR/../.env.production" | cut -d'=' -f2-)
-export AWS_ACCESS_KEY_ID=$(grep "^AWS_ACCESS_KEY_ID=" "$BACKEND_DIR/../.env.production" | cut -d'=' -f2-)
-export AWS_SECRET_ACCESS_KEY=$(grep "^AWS_SECRET_ACCESS_KEY=" "$BACKEND_DIR/../.env.production" | cut -d'=' -f2-)
-export AWS_REGION=$(grep "^AWS_REGION=" "$BACKEND_DIR/../.env.production" | cut -d'=' -f2- || echo "us-east-1")
-export LOGFIRE_TOKEN=$(grep "^LOGFIRE_TOKEN=" "$BACKEND_DIR/../.env.production" | cut -d'=' -f2-)
-
-# Set the tunneled database URL
-export DATABASE_URL="$LOCAL_DB_URL"
-
-echo ""
-echo "Running ingestion script..."
-echo ""
-
-# Run the ingestion script
 cd "$BACKEND_DIR"
-uv run python scripts/ingest_reddit_posts.py $PYTHON_ARGS
+
+# Step 1: Download posts (or use provided file)
+if [ -z "$POSTS_FILE" ]; then
+    echo ""
+    echo "Step 1: Downloading posts from r/$SUBREDDIT..."
+    TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+    POSTS_FILE="reddit_posts_${SUBREDDIT}_${TIMESTAMP}.ndjson"
+    
+    uv run python scripts/download_reddit_posts.py \
+        --limit "$LIMIT" \
+        --subreddit "$SUBREDDIT" \
+        --output "$POSTS_FILE"
+    
+    if [ ! -f "$POSTS_FILE" ]; then
+        echo "ERROR: Download failed, no output file created"
+        exit 1
+    fi
+else
+    echo ""
+    echo "Step 1: Using existing file: $POSTS_FILE"
+    if [ ! -f "$POSTS_FILE" ]; then
+        echo "ERROR: File not found: $POSTS_FILE"
+        exit 1
+    fi
+fi
+
+# Count posts
+POST_COUNT=$(wc -l < "$POSTS_FILE")
+echo "Posts to submit: $POST_COUNT"
+
+if [ "$POST_COUNT" -eq 0 ]; then
+    echo "No posts to submit"
+    exit 0
+fi
+
+# Step 2: Submit to production
+echo ""
+echo "Step 2: Submitting to production server..."
+uv run python scripts/submit_to_prod.py "$POSTS_FILE" --subreddit "$SUBREDDIT"
 
 echo ""
-echo "=== Ingestion complete ==="
+echo "=== Done ==="
+echo "Posts file saved: $POSTS_FILE"
